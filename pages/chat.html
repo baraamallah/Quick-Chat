@@ -7,6 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="../favicon.svg">
     <link rel="stylesheet" href="../css/dark-theme.css">
     <link rel="stylesheet" href="../css/theme-system.css">
+    <link rel="stylesheet" href="../css/mobile.css">
+    <link rel="stylesheet" href="../css/images.css">
+    <link rel="stylesheet" href="../css/groups.css">
     <style>
         body {
             margin: 0;
@@ -673,6 +676,20 @@
                     <div class="empty-state-text">Add friends using their code</div>
                 </div>
             </div>
+
+            <!-- Groups Section -->
+            <div class="groups-section">
+                <div class="section-header">
+                    <div class="section-title">Groups</div>
+                    <button class="create-group-btn" onclick="openCreateGroupModal()" title="Create Group">+</button>
+                </div>
+                <div id="groupsList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-text">No groups yet</div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Chat Area -->
@@ -704,6 +721,9 @@
 
                 <div class="message-input-container">
                     <form class="message-input-form" onsubmit="sendMessage(event)">
+                        <button type="button" class="attachment-btn" onclick="openAttachmentMenu()" title="Attach">
+                            📎
+                        </button>
                         <textarea 
                             class="message-input" 
                             id="messageInput"
@@ -761,6 +781,75 @@
         </div>
     </div>
 
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
+
+    <!-- Attachment Menu -->
+    <div class="attachment-menu" id="attachmentMenu">
+        <button onclick="selectImage()">📸 Image</button>
+        <button onclick="closeAttachmentMenu()">❌ Cancel</button>
+    </div>
+
+    <!-- Hidden File Input -->
+    <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+
+    <!-- Image Preview Modal -->
+    <div class="image-preview-modal" id="imagePreviewModal">
+        <div class="image-preview-content">
+            <h3>Send Image</h3>
+            <div class="preview-image-container">
+                <img id="previewImage" src="" alt="Preview">
+            </div>
+            <div class="preview-file-name" id="previewFileName"></div>
+            <textarea 
+                class="preview-caption-input" 
+                id="imageCaption" 
+                placeholder="Add a caption (optional)..."
+            ></textarea>
+            <div class="preview-actions">
+                <button class="preview-cancel-btn" onclick="closeImagePreview()">Cancel</button>
+                <button class="preview-send-btn" onclick="sendPreviewedImage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div class="image-viewer-modal" id="imageViewerModal" onclick="closeImageViewer()">
+        <button class="image-viewer-close" onclick="closeImageViewer()">×</button>
+        <div class="viewer-image-container" onclick="event.stopPropagation()">
+            <img id="viewerImage" src="" alt="Image">
+        </div>
+        <div class="viewer-info" onclick="event.stopPropagation()">
+            <div class="viewer-details">
+                <div class="viewer-sender" id="viewerSender"></div>
+                <div class="viewer-time" id="viewerTime"></div>
+                <div class="viewer-caption" id="viewerCaption"></div>
+            </div>
+            <div class="viewer-actions">
+                <button onclick="downloadImage()">⬇️ Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div class="create-group-modal" id="createGroupModal">
+        <div class="create-group-content">
+            <h2>Create Group</h2>
+            <div class="form-group">
+                <label>Group Name</label>
+                <input type="text" id="groupName" placeholder="Enter group name" maxlength="100">
+            </div>
+            <div class="form-group">
+                <label>Description (Optional)</label>
+                <textarea id="groupDescription" placeholder="What's this group about?"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeCreateGroupModal()">Cancel</button>
+                <button class="btn-primary" onclick="handleCreateGroup()">Create Group</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/config.js"></script>
     <script src="../js/supabase-init.js"></script>
@@ -799,6 +888,7 @@
             updateUserProfile();
             updateOnlineStatus(true);
             loadFriends();
+            loadGroups(); // Load groups
             subscribeToUpdates();
         }
 
@@ -1033,6 +1123,13 @@
 
             container.innerHTML = messages.map(msg => {
                 const isSent = msg.sender_id === currentUser.id;
+                
+                // Handle image messages
+                if (msg.message_type === 'image') {
+                    return renderImageMessage(msg, isSent);
+                }
+                
+                // Handle text messages
                 const sender = isSent ? currentUser : selectedFriend;
                 const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -1338,9 +1435,24 @@
             updateOnlineStatus(false);
         });
 
+        // Mobile sidebar functions
+        function openMobileSidebar() {
+            document.querySelector('.sidebar').classList.add('open');
+            document.getElementById('mobileOverlay').classList.add('active');
+        }
+
+        function closeMobileSidebar() {
+            document.querySelector('.sidebar').classList.remove('open');
+            document.getElementById('mobileOverlay').classList.remove('active');
+        }
+
         // Initialize
         checkAuth();
     </script>
+
+    <!-- Include additional JS files -->
+    <script src="../js/images.js"></script>
+    <script src="../js/groups.js"></script>
     
     <!-- Theme Toggle -->
     <script src="../js/theme-toggle.js"></script>
