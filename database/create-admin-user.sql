@@ -6,28 +6,33 @@
 -- Enter email and password
 -- Copy the user ID that gets created
 
--- STEP 2: Then run this SQL, replacing the values:
+-- STEP 2: Then run this SQL with your user details:
 INSERT INTO users (
   id, 
   email, 
   username, 
   display_name, 
   bio, 
-  avatar_url, 
+  avatar_url,
+  bg_image_url,
   color, 
   friend_code, 
   role
 ) VALUES (
-  'PASTE_USER_ID_HERE'::uuid,  -- Replace with the UUID from auth.users
-  'admin@example.com',           -- Replace with actual email
-  'admin',                       -- Replace with desired username
-  'Administrator',               -- Replace with display name
-  'System Administrator',        -- Optional bio
-  '',                           -- Optional avatar URL
-  '#6366f1',                    -- Color
-  upper(substring(md5(random()::text) from 1 for 6)), -- Auto-generated friend code
-  'admin'                       -- Role: 'admin' or 'user'
+  'b2256482-3464-459f-bf83-7fb65fd2c4ef'::uuid,
+  'baraa.elmallah@gmail.com',
+  'baraa',
+  'Baraa',
+  'System Administrator',
+  '',
+  '',
+  '#6366f1',
+  upper(substring(md5(random()::text) from 1 for 6)),
+  'admin'
 );
+
+-- Verify the user was created:
+SELECT * FROM users WHERE email = 'baraa.elmallah@gmail.com';
 
 -- Example for creating a regular user:
 -- INSERT INTO users (id, email, username, display_name, bio, avatar_url, color, friend_code, role)
