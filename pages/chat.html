@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Quick Chat</title>
+    <link rel="stylesheet" href="../css/dark-theme.css">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 50%, rgba(240, 147, 251, 0.08) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .chat-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .friend-code-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-hover);
+        }
+
+        /* Add Friend Section */
+        .add-friend-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .add-friend-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .add-friend-input {
+            flex: 1;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .add-friend-input::placeholder {
+            text-transform: none;
+        }
+
+        /* Friends List */
+        .friends-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .friends-list-header {
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .friend-item {
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+            position: relative;
+        }
+
+        .friend-item:hover {
+            background: rgba(99, 102, 241, 0.15);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .friend-item.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+        }
+
+        .friend-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .friend-name {
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .friend-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .unread-badge {
+            background: var(--accent-primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .online-indicator {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 12px;
+            left: 42px;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        .chat-header {
+            padding: 20px 24px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header-text {
+            flex: 1;
+        }
+
+        .chat-friend-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .chat-friend-status {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Messages */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 70%;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .message.sent .message-content {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9));
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .message.sent .message-time {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Message Input */
+        .message-input-container {
+            padding: 20px 24px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .message-input-form {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            resize: none;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .send-btn:hover {
+            transform: scale(1.08) rotate(5deg);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Empty States */
+        .empty-chat {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-chat-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-chat-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .empty-chat-text {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            align-items: center;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-4px);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 10;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-profile">
+                    <div class="avatar" id="currentUserAvatar"></div>
+                    <div class="user-info">
+                        <div class="user-name" id="currentUserName">Loading...</div>
+                        <div class="friend-code-display" id="currentUserCode">------</div>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="window.location.href='settings.html'" title="Settings">⚙️</button>
+                    <button class="icon-btn" onclick="signOut()" title="Sign Out">🚪</button>
+                </div>
+            </div>
+
+            <div class="add-friend-section">
+                <form class="add-friend-form" onsubmit="addFriend(event)">
+                    <input 
+                        type="text" 
+                        class="add-friend-input" 
+                        id="friendCodeInput"
+                        placeholder="Enter friend code"
+                        maxlength="6"
+                        required
+                    >
+                    <button type="submit" class="icon-btn" title="Add Friend">➕</button>
+                </form>
+            </div>
+
+            <div class="friends-list-header">Friends</div>
+            <div class="friends-list" id="friendsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">👥</div>
+                    <div class="empty-state-title">No friends yet</div>
+                    <div class="empty-state-text">Add friends using their code</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <div class="empty-chat" id="emptyChat">
+                <div>
+                    <div class="empty-chat-icon">💬</div>
+                    <div class="empty-chat-title">Select a friend to start chatting</div>
+                    <div class="empty-chat-text">Your messages are private and secure</div>
+                </div>
+            </div>
+
+            <div id="chatView" style="display: none; flex: 1; display: flex; flex-direction: column;">
+                <div class="chat-header">
+                    <div class="chat-header-info">
+                        <div class="avatar" id="chatFriendAvatar"></div>
+                        <div class="chat-header-text">
+                            <div class="chat-friend-name" id="chatFriendName"></div>
+                            <div class="chat-friend-status" id="chatFriendStatus"></div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="icon-btn" onclick="removeFriend()" title="Remove Friend">🗑️</button>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messagesContainer"></div>
+
+                <div class="message-input-container">
+                    <form class="message-input-form" onsubmit="sendMessage(event)">
+                        <textarea 
+                            class="message-input" 
+                            id="messageInput"
+                            placeholder="Type a message..."
+                            rows="1"
+                            required
+                        ></textarea>
+                        <button type="submit" class="send-btn" id="sendBtn">
+                            <span>📤</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/supabase-init.js"></script>
+    <script>
+        // Initialize Supabase
+        supabaseClient = initSupabase();
+
+        let currentUser = null;
+        let friends = [];
+        let selectedFriend = null;
+        let messages = [];
+        let messageSubscription = null;
+
+        // Check authentication
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            if (!session) {
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            // Get user profile
+            const { data: user, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            if (error || !user) {
+                showNotification('Failed to load profile', 'error');
+                return;
+            }
+
+            currentUser = user;
+            updateUserProfile();
+            updateOnlineStatus(true);
+            loadFriends();
+            subscribeToUpdates();
+        }
+
+        // Update user profile display
+        function updateUserProfile() {
+            const avatar = document.getElementById('currentUserAvatar');
+            const name = document.getElementById('currentUserName');
+            const code = document.getElementById('currentUserCode');
+
+            if (currentUser.avatar_url) {
+                avatar.innerHTML = `<img src="${escapeHtml(currentUser.avatar_url)}" alt="${escapeHtml(currentUser.display_name)}">`;
+            } else {
+                avatar.style.background = currentUser.color;
+                avatar.textContent = currentUser.display_name.charAt(0).toUpperCase();
+            }
+
+            name.textContent = currentUser.display_name;
+            code.textContent = currentUser.friend_code;
+        }
+
+        // Update online status
+        async function updateOnlineStatus(isOnline) {
+            await supabaseClient
+                .from('users')
+                .update({ 
+                    is_online: isOnline,
+                    last_seen: new Date().toISOString()
+                })
+                .eq('id', currentUser.id);
+        }
+
+        // Load friends
+        async function loadFriends() {
+            try {
+                const { data: friendships, error } = await supabaseClient
+                    .from('friendships')
+                    .select('*')
+                    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
+
+                if (error) throw error;
+
+                // Get friend IDs
+                const friendIds = friendships.map(f => 
+                    f.user1_id === currentUser.id ? f.user2_id : f.user1_id
+                );
+
+                if (friendIds.length === 0) {
+                    friends = [];
+                    renderFriends();
+                    return;
+                }
+
+                // Get friend details
+                const { data: friendsData, error: friendsError } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .in('id', friendIds);
+
+                if (friendsError) throw friendsError;
+
+                friends = friendsData;
+                renderFriends();
+            } catch (error) {
+                console.error('Error loading friends:', error);
+                showNotification('Failed to load friends', 'error');
+            }
+        }
+
+        // Render friends list
+        function renderFriends() {
+            const container = document.getElementById('friendsList');
+
+            if (friends.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <div class="empty-state-title">No friends yet</div>
+                        <div class="empty-state-text">Add friends using their code</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = friends.map(friend => {
+                const avatarHtml = friend.avatar_url 
+                    ? `<img src="${escapeHtml(friend.avatar_url)}" alt="${escapeHtml(friend.display_name)}">`
+                    : friend.display_name.charAt(0).toUpperCase();
+                
+                const isActive = selectedFriend && selectedFriend.id === friend.id;
+                
+                return `
+                    <div class="friend-item ${isActive ? 'active' : ''}" onclick="selectFriend('${friend.id}')">
+                        <div class="avatar avatar-sm" style="background: ${friend.color}">
+                            ${avatarHtml}
+                        </div>
+                        ${friend.is_online ? '<div class="online-indicator"></div>' : ''}
+                        <div class="friend-item-info">
+                            <div class="friend-name">${escapeHtml(friend.display_name)}</div>
+                            <div class="friend-status">${friend.is_online ? '🟢 Online' : '⚫ Offline'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Add friend
+        async function addFriend(event) {
+            event.preventDefault();
+            
+            const input = document.getElementById('friendCodeInput');
+            const friendCode = input.value.trim().toUpperCase();
+
+            if (friendCode === currentUser.friend_code) {
+                showNotification("You can't add yourself!", 'error');
+                return;
+            }
+
+            try {
+                // Find user by friend code
+                const { data: friend, error: findError } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('friend_code', friendCode)
+                    .single();
+
+                if (findError || !friend) {
+                    showNotification('Friend code not found', 'error');
+                    return;
+                }
+
+                // Check if already friends
+                const alreadyFriends = friends.some(f => f.id === friend.id);
+                if (alreadyFriends) {
+                    showNotification('Already friends!', 'error');
+                    return;
+                }
+
+                // Create friendship (ensure consistent ordering)
+                const [user1, user2] = [currentUser.id, friend.id].sort();
+                
+                const { error: insertError } = await supabaseClient
+                    .from('friendships')
+                    .insert({
+                        user1_id: user1,
+                        user2_id: user2
+                    });
+
+                if (insertError) throw insertError;
+
+                showNotification(`Added ${friend.display_name}!`, 'success');
+                input.value = '';
+                loadFriends();
+            } catch (error) {
+                console.error('Error adding friend:', error);
+                showNotification('Failed to add friend', 'error');
+            }
+        }
+
+        // Select friend to chat
+        async function selectFriend(friendId) {
+            selectedFriend = friends.find(f => f.id === friendId);
+            if (!selectedFriend) return;
+
+            // Update UI
+            document.getElementById('emptyChat').style.display = 'none';
+            document.getElementById('chatView').style.display = 'flex';
+
+            // Update chat header
+            const avatar = document.getElementById('chatFriendAvatar');
+            if (selectedFriend.avatar_url) {
+                avatar.innerHTML = `<img src="${escapeHtml(selectedFriend.avatar_url)}" alt="${escapeHtml(selectedFriend.display_name)}">`;
+            } else {
+                avatar.style.background = selectedFriend.color;
+                avatar.textContent = selectedFriend.display_name.charAt(0).toUpperCase();
+            }
+
+            document.getElementById('chatFriendName').textContent = selectedFriend.display_name;
+            document.getElementById('chatFriendStatus').textContent = selectedFriend.is_online ? '🟢 Online' : '⚫ Offline';
+
+            renderFriends();
+            loadMessages();
+            subscribeToMessages();
+        }
+
+        // Load messages
+        async function loadMessages() {
+            if (!selectedFriend) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('messages')
+                    .select('*')
+                    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedFriend.id}),and(sender_id.eq.${selectedFriend.id},receiver_id.eq.${currentUser.id})`)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                messages = data || [];
+                renderMessages();
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                showNotification('Failed to load messages', 'error');
+            }
+        }
+
+        // Render messages
+        function renderMessages() {
+            const container = document.getElementById('messagesContainer');
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <div class="empty-state-title">No messages yet</div>
+                        <div class="empty-state-text">Send a message to start the conversation</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => {
+                const isSent = msg.sender_id === currentUser.id;
+                const sender = isSent ? currentUser : selectedFriend;
+                const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const avatarHtml = sender.avatar_url 
+                    ? `<img src="${escapeHtml(sender.avatar_url)}" alt="${escapeHtml(sender.display_name)}">`
+                    : sender.display_name.charAt(0).toUpperCase();
+
+                return `
+                    <div class="message ${isSent ? 'sent' : ''}">
+                        <div class="avatar avatar-sm message-avatar" style="background: ${sender.color}">
+                            ${avatarHtml}
+                        </div>
+                        <div>
+                            <div class="message-content">
+                                <div class="message-text">${escapeHtml(msg.content)}</div>
+                                <div class="message-time">${time}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Send message
+        async function sendMessage(event) {
+            event.preventDefault();
+
+            if (!selectedFriend) return;
+
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+
+            if (!content) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('messages')
+                    .insert({
+                        sender_id: currentUser.id,
+                        receiver_id: selectedFriend.id,
+                        content: content
+                    });
+
+                if (error) throw error;
+
+                input.value = '';
+                input.style.height = 'auto';
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showNotification('Failed to send message', 'error');
+            }
+        }
+
+        // Remove friend
+        async function removeFriend() {
+            if (!selectedFriend) return;
+
+            if (!confirm(`Remove ${selectedFriend.display_name} from friends?`)) return;
+
+            try {
+                const [user1, user2] = [currentUser.id, selectedFriend.id].sort();
+
+                const { error } = await supabaseClient
+                    .from('friendships')
+                    .delete()
+                    .eq('user1_id', user1)
+                    .eq('user2_id', user2);
+
+                if (error) throw error;
+
+                showNotification('Friend removed', 'success');
+                
+                // Reset chat view
+                document.getElementById('emptyChat').style.display = 'flex';
+                document.getElementById('chatView').style.display = 'none';
+                selectedFriend = null;
+                
+                if (messageSubscription) {
+                    messageSubscription.unsubscribe();
+                    messageSubscription = null;
+                }
+
+                loadFriends();
+            } catch (error) {
+                console.error('Error removing friend:', error);
+                showNotification('Failed to remove friend', 'error');
+            }
+        }
+
+        // Subscribe to real-time updates
+        function subscribeToUpdates() {
+            // Subscribe to friendships changes
+            supabaseClient
+                .channel('friendships-channel')
+                .on('postgres_changes', { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'friendships',
+                    filter: `user1_id=eq.${currentUser.id}`
+                }, loadFriends)
+                .on('postgres_changes', { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'friendships',
+                    filter: `user2_id=eq.${currentUser.id}`
+                }, loadFriends)
+                .subscribe();
+
+            // Subscribe to user status changes
+            supabaseClient
+                .channel('users-channel')
+                .on('postgres_changes', { 
+                    event: 'UPDATE', 
+                    schema: 'public', 
+                    table: 'users'
+                }, (payload) => {
+                    const updatedUser = payload.new;
+                    const friendIndex = friends.findIndex(f => f.id === updatedUser.id);
+                    if (friendIndex !== -1) {
+                        friends[friendIndex] = updatedUser;
+                        renderFriends();
+                        
+                        if (selectedFriend && selectedFriend.id === updatedUser.id) {
+                            selectedFriend = updatedUser;
+                            document.getElementById('chatFriendStatus').textContent = 
+                                updatedUser.is_online ? '🟢 Online' : '⚫ Offline';
+                        }
+                    }
+                })
+                .subscribe();
+        }
+
+        // Subscribe to messages for current chat
+        function subscribeToMessages() {
+            if (!selectedFriend) return;
+
+            // Unsubscribe from previous
+            if (messageSubscription) {
+                messageSubscription.unsubscribe();
+            }
+
+            // Subscribe to new messages
+            messageSubscription = supabaseClient
+                .channel(`messages-${selectedFriend.id}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `sender_id=eq.${selectedFriend.id}`
+                }, (payload) => {
+                    if (payload.new.receiver_id === currentUser.id) {
+                        messages.push(payload.new);
+                        renderMessages();
+                    }
+                })
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: `sender_id=eq.${currentUser.id}`
+                }, (payload) => {
+                    if (payload.new.receiver_id === selectedFriend.id) {
+                        messages.push(payload.new);
+                        renderMessages();
+                    }
+                })
+                .subscribe();
+        }
+
+        // Sign out
+        async function signOut() {
+            await updateOnlineStatus(false);
+            await supabaseClient.auth.signOut();
+            window.location.href = 'auth.html';
+        }
+
+        // Helper functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // Auto-resize textarea
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            updateOnlineStatus(false);
+        });
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>

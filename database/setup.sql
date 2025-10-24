@@ -13,6 +13,7 @@ CREATE TABLE users (
   display_name TEXT NOT NULL,
   bio TEXT DEFAULT '',
   avatar_url TEXT DEFAULT '',
+  bg_image_url TEXT DEFAULT '',
   color TEXT NOT NULL,
   friend_code TEXT UNIQUE NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
