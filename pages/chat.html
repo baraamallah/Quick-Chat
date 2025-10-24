@@ -22,8 +22,8 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: center;
-            opacity: 0.15;
+            object-position: center center;
+            opacity: 0.25;
             z-index: 0;
             pointer-events: none;
         }
@@ -544,9 +544,10 @@
                         <textarea 
                             class="message-input" 
                             id="messageInput"
-                            placeholder="Type a message..."
+                            placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
                             rows="1"
                             required
+                            onkeydown="handleMessageKeyDown(event)"
                         ></textarea>
                         <button type="submit" class="send-btn" id="sendBtn">
                             <span>📤</span>
@@ -853,6 +854,17 @@
 
             // Scroll to bottom
             container.scrollTop = container.scrollHeight;
+        }
+
+        // Handle Enter key in message input
+        function handleMessageKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                const form = event.target.closest('form');
+                if (form) {
+                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }
         }
 
         // Send message

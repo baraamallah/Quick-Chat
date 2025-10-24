@@ -20,8 +20,16 @@
         toggleBtn.innerHTML = savedTheme === 'dark' ? '☀️' : '🌙';
         toggleBtn.title = savedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
         
-        // Add to body
-        document.body.appendChild(toggleBtn);
+        // Try to add to header-actions, otherwise add to body (fallback)
+        const headerActions = document.querySelector('.header-actions');
+        if (headerActions) {
+            // Add as icon-btn for consistent styling
+            toggleBtn.className = 'icon-btn theme-toggle-btn';
+            headerActions.insertBefore(toggleBtn, headerActions.lastElementChild);
+        } else {
+            // Fallback to floating button
+            document.body.appendChild(toggleBtn);
+        }
         
         // Toggle theme on click
         toggleBtn.addEventListener('click', toggleTheme);

@@ -38,8 +38,18 @@
     --overlay: rgba(0, 0, 0, 0.3);
 }
 
-/* Theme Toggle Button */
-.theme-toggle-btn {
+/* Theme Toggle Button - Inline in header */
+.icon-btn.theme-toggle-btn {
+    /* Inherits icon-btn styles, no additional positioning needed */
+    font-size: 18px;
+}
+
+.icon-btn.theme-toggle-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Theme Toggle Button - Floating (fallback for pages without header-actions) */
+body > .theme-toggle-btn {
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -60,13 +70,13 @@
     padding: 0;
 }
 
-.theme-toggle-btn:hover {
+body > .theme-toggle-btn:hover {
     background: var(--accent-hover);
     transform: scale(1.1) rotate(15deg);
     box-shadow: 0 6px 20px var(--shadow);
 }
 
-.theme-toggle-btn:active {
+body > .theme-toggle-btn:active {
     transform: scale(0.95);
 }
 
