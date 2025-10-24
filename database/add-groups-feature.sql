@@ -51,9 +51,18 @@ ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
 ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) DEFAULT 'text',
 ADD COLUMN IF NOT EXISTS image_url TEXT;
 
--- Make receiver_id nullable for group messages
-ALTER TABLE messages 
-ALTER COLUMN receiver_id DROP NOT NULL;
+-- Make receiver_id nullable for group messages (only if not already nullable)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'messages' 
+        AND column_name = 'receiver_id' 
+        AND is_nullable = 'NO'
+    ) THEN
+        ALTER TABLE messages ALTER COLUMN receiver_id DROP NOT NULL;
+    END IF;
+END $$;
 
 -- Drop old constraint if exists
 ALTER TABLE messages 
@@ -87,6 +96,30 @@ ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
+-- SECURITY DEFINER FUNCTIONS TO AVOID RECURSION
+-- ============================================
+
+-- Function to check if user is member of a group
+CREATE OR REPLACE FUNCTION public.is_member_of_group(check_group_id UUID) RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM group_members 
+    WHERE group_id = check_group_id AND user_id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to check if user is admin of a group
+CREATE OR REPLACE FUNCTION public.is_admin_of_group(check_group_id UUID) RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM group_members 
+    WHERE group_id = check_group_id AND user_id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
 -- 5. CREATE RLS POLICIES FOR GROUPS
 -- ============================================
 
@@ -94,26 +127,13 @@ ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view their groups" ON groups;
 CREATE POLICY "Users can view their groups" ON groups
     FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM group_members gm
-            WHERE gm.group_id = groups.id 
-            AND gm.user_id = auth.uid()
-        )
-    );
+    USING (public.is_member_of_group(groups.id));
 
 -- Groups: Only admins can update groups (avoid recursion)
 DROP POLICY IF EXISTS "Admins can update groups" ON groups;
 CREATE POLICY "Admins can update groups" ON groups
     FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM group_members gm
-            WHERE gm.group_id = groups.id 
-            AND gm.user_id = auth.uid() 
-            AND gm.role = 'admin'
-        )
-    );
+    USING (public.is_admin_of_group(groups.id));
 
 -- Groups: Any authenticated user can create groups
 DROP POLICY IF EXISTS "Users can create groups" ON groups;
@@ -131,11 +151,7 @@ CREATE POLICY "Users can view group members" ON group_members
     FOR SELECT
     USING (
         user_id = auth.uid() OR
-        EXISTS (
-            SELECT 1 FROM group_members gm
-            WHERE gm.group_id = group_members.group_id 
-            AND gm.user_id = auth.uid()
-        )
+        public.is_member_of_group(group_members.group_id)
     );
 
 -- Group Members: Admins can add members (avoid recursion)
@@ -143,12 +159,10 @@ DROP POLICY IF EXISTS "Admins can add members" ON group_members;
 CREATE POLICY "Admins can add members" ON group_members
     FOR INSERT
     WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM group_members gm
-            WHERE gm.group_id = group_members.group_id 
-            AND gm.user_id = auth.uid() 
-            AND gm.role = 'admin'
-        )
+        -- Allow if user is admin of the group
+        public.is_admin_of_group(group_members.group_id) OR
+        -- Allow if adding yourself as admin and no members exist yet (for group creation)
+        (group_members.user_id = auth.uid() AND group_members.role = 'admin' AND NOT EXISTS (SELECT 1 FROM group_members WHERE group_id = group_members.group_id))
     );
 
 -- Group Members: Users can leave groups (delete themselves)
@@ -163,12 +177,7 @@ CREATE POLICY "Admins can remove members" ON group_members
     FOR DELETE
     USING (
         user_id = auth.uid() OR
-        EXISTS (
-            SELECT 1 FROM group_members gm
-            WHERE gm.group_id = group_members.group_id 
-            AND gm.user_id = auth.uid() 
-            AND gm.role = 'admin'
-        )
+        public.is_admin_of_group(group_members.group_id)
     );
 
 -- ============================================
@@ -183,11 +192,7 @@ CREATE POLICY "Users can view their messages" ON messages
     USING (
         sender_id = auth.uid() OR 
         receiver_id = auth.uid() OR
-        (group_id IS NOT NULL AND EXISTS (
-            SELECT 1 FROM group_members gm
-            WHERE gm.group_id = messages.group_id 
-            AND gm.user_id = auth.uid()
-        ))
+        (group_id IS NOT NULL AND public.is_member_of_group(group_id))
     );
 
 -- Messages: Users can send to groups they're in (avoid recursion)
@@ -204,11 +209,7 @@ CREATE POLICY "Users can send messages" ON messages
                    OR (user1_id = receiver_id AND user2_id = sender_id)
             )) OR
             -- Group message
-            (group_id IS NOT NULL AND EXISTS (
-                SELECT 1 FROM group_members gm
-                WHERE gm.group_id = messages.group_id 
-                AND gm.user_id = auth.uid()
-            ))
+            (group_id IS NOT NULL AND public.is_member_of_group(group_id))
         )
     );
 
@@ -256,12 +257,44 @@ CREATE TRIGGER trigger_set_group_code
     FOR EACH ROW
     EXECUTE FUNCTION set_group_code();
 
+-- Function to add creator as admin member
+CREATE OR REPLACE FUNCTION add_group_creator_as_admin()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO group_members (group_id, user_id, role)
+    VALUES (NEW.id, NEW.created_by, 'admin');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to add creator as admin
+DROP TRIGGER IF EXISTS trigger_add_creator_as_admin ON groups;
+CREATE TRIGGER trigger_add_creator_as_admin
+    AFTER INSERT ON groups
+    FOR EACH ROW
+    EXECUTE FUNCTION add_group_creator_as_admin();
+
 -- ============================================
 -- 9. ENABLE REALTIME (OPTIONAL)
 -- ============================================
 
-ALTER PUBLICATION supabase_realtime ADD TABLE groups;
-ALTER PUBLICATION supabase_realtime ADD TABLE group_members;
+-- Add tables to realtime publication if not already added
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'groups'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE groups;
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'group_members'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE group_members;
+    END IF;
+END $$;
 
 -- ============================================
 -- VERIFICATION
