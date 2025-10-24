@@ -600,6 +600,8 @@
 
         // Update online status
         async function updateOnlineStatus(isOnline) {
+            if (!currentUser) return;
+            
             await supabaseClient
                 .from('users')
                 .update({ 
