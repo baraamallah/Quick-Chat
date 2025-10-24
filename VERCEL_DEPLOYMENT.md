@@ -70,6 +70,8 @@ All internal navigation uses absolute paths starting with `/pages/` to ensure pr
 - [ ] Verify admin panel access (if applicable)
 - [ ] Ensure all navigation links work properly
 - [ ] Test on mobile devices
+- [ ] Check Vercel Analytics dashboard for tracking
+- [ ] Verify Core Web Vitals scores
 
 ### Troubleshooting
 
