@@ -1,0 +1,23 @@
+-- ============================================
+-- Quick Chat - File Organization Guide
+-- ============================================
+--
+-- DATABASE FOLDER STRUCTURE:
+--
+-- ✅ KEEP THESE FILES:
+--    complete-setup.sql      - Main setup file (use this!)
+--    cleanup.sql            - Clean database reset
+--
+-- 🗑️  CAN DELETE THESE (obsolete):
+--    setup.sql              - Old basic setup (replaced by complete-setup.sql)
+--    add-groups-feature.sql - Partial groups setup (included in complete-setup.sql)
+--    fix-signup-policy.sql  - One-time fix (no longer needed)
+--    add-bg-image.sql       - Feature addition (included in complete-setup.sql)
+--    create-admin-user.sql  - Manual admin creation (not needed)
+--
+-- USAGE WORKFLOW:
+-- 1. Run cleanup.sql (if needed to reset)
+-- 2. Run complete-setup.sql (to setup everything)
+-- 3. Your app is ready!
+--
+-- ============================================
