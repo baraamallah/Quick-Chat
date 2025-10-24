@@ -467,7 +467,7 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="icon-btn" onclick="window.location.href='settings.html'" title="Settings">⚙️</button>
+                    <button class="icon-btn" onclick="window.location.href='/pages/settings.html'" title="Settings">⚙️</button>
                     <button class="icon-btn" onclick="signOut()" title="Sign Out">🚪</button>
                 </div>
             </div>
@@ -558,7 +558,7 @@
             const { data: { session } } = await supabaseClient.auth.getSession();
             
             if (!session) {
-                window.location.href = 'auth.html';
+                window.location.href = '/pages/auth.html';
                 return;
             }
 
@@ -978,7 +978,7 @@
         async function signOut() {
             await updateOnlineStatus(false);
             await supabaseClient.auth.signOut();
-            window.location.href = 'auth.html';
+            window.location.href = '/pages/auth.html';
         }
 
         // Helper functions

@@ -100,7 +100,7 @@
                 </button>
 
                 <div class="text-center mt-3">
-                    <a href="index.html" class="text-secondary" style="font-size: 14px;">← Back to home</a>
+                    <a href="/" class="text-secondary" style="font-size: 14px;">← Back to home</a>
                 </div>
             </form>
         </div>
@@ -131,7 +131,7 @@
                     }
 
                     if (user && user.role === 'admin') {
-                        window.location.href = 'admin.html';
+                        window.location.href = '/pages/admin.html';
                     } else {
                         showError('You do not have admin privileges');
                         await supabase_client.auth.signOut();
@@ -205,7 +205,7 @@
                 }
                 
                 showNotification('Welcome, Admin!', 'success');
-                setTimeout(() => window.location.href = 'admin.html', 1000);
+                setTimeout(() => window.location.href = '/pages/admin.html', 1000);
             } catch (error) {
                 console.error('Admin login error:', error);
                 showError(error.message || 'Failed to sign in');

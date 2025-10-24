@@ -257,7 +257,7 @@
                 <p class="text-secondary">Manage users and monitor activity</p>
             </div>
             <div class="flex gap-2">
-                <a href="index.html" class="btn btn-secondary btn-sm">← Home</a>
+                <a href="/" class="btn btn-secondary btn-sm">← Home</a>
                 <button onclick="signOut()" class="btn btn-danger btn-sm">Sign Out</button>
             </div>
         </div>
@@ -379,7 +379,7 @@
             const { data: { session } } = await supabaseClient.auth.getSession();
             
             if (!session) {
-                window.location.href = 'auth.html';
+                window.location.href = '/pages/auth.html';
                 return;
             }
 
@@ -391,7 +391,7 @@
 
             if (!user || user.role !== 'admin') {
                 showNotification('Access denied. Admin only.', 'error');
-                setTimeout(() => window.location.href = 'chat.html', 2000);
+                setTimeout(() => window.location.href = '/pages/chat.html', 2000);
                 return;
             }
 
@@ -664,7 +664,7 @@
         // Sign out
         async function signOut() {
             await supabaseClient.auth.signOut();
-            window.location.href = 'admin-login.html';
+            window.location.href = '/pages/admin-login.html';
         }
 
         // Subscribe to real-time updates
