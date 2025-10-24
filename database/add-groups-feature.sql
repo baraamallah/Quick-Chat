@@ -136,10 +136,10 @@ CREATE POLICY "Admins can update groups" ON groups
     USING (public.is_admin_of_group(groups.id));
 
 -- Groups: Any authenticated user can create groups
-DROP POLICY IF EXISTS "Users can create groups" ON groups;
-CREATE POLICY "Users can create groups" ON groups
+DROP POLICY IF EXISTS "Authenticated users can create groups" ON groups;
+CREATE POLICY "Authenticated users can create groups" ON groups
     FOR INSERT
-    WITH CHECK (auth.uid() IS NOT NULL);
+    WITH CHECK (auth.uid() IS NOT NULL AND created_by = auth.uid());
 
 -- ============================================
 -- 6. CREATE RLS POLICIES FOR GROUP MEMBERS
