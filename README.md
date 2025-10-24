@@ -1,16 +1,33 @@
-# ⚡ Quick Chat - Lightning Fast Chat Application
+# ⚡ Quick Chat - Modern Messaging Platform
 
-A modern, real-time chat application with friend codes, private messaging, and admin controls powered by Supabase.
+A feature-rich, real-time chat application with groups, image sharing, and mobile-first design powered by Supabase.
 
 ## 🚀 Features
 
-- **Friend Code System**: Add friends using unique 6-character codes
-- **Private Messaging**: Chat only with your friends
-- **Admin Dashboard**: Create and manage users with auto-generated friend codes
+### 💬 Messaging
 - **Real-time Chat**: Instant messaging with live updates
-- **Session Management**: Clear all chat history and database with one click
-- **Modern UI**: Beautiful gradient design with smooth animations
-- **Super Fast**: Optimized for performance
+- **Friend System**: Add friends using unique 6-character codes
+- **Group Chats**: Create groups with unique codes, add multiple members
+- **Image Sharing**: Upload and share images with captions
+- **Private Messages**: Secure one-on-one conversations
+
+### 🎨 Customization
+- **Dark/Light Themes**: Toggle between themes with smooth transitions
+- **Custom Backgrounds**: Set personal background images
+- **Profile Avatars**: Customize your profile with avatars and colors
+- **Custom Favicons**: Unique icons for regular and admin pages
+
+### 📱 Mobile-Friendly
+- **Responsive Design**: Works perfectly on all devices
+- **Touch-Optimized**: 44px+ touch targets, smooth gestures
+- **PWA Ready**: Install as an app on mobile devices
+- **Fast & Smooth**: Optimized for mobile performance
+
+### 🔒 Security & Admin
+- **Row Level Security**: Database-level access control
+- **Admin Dashboard**: Comprehensive user and system management
+- **Session Management**: Secure authentication and session handling
+- **Privacy Controls**: Messages visible only to intended recipients
 
 ## 📋 Setup Instructions
 
@@ -22,7 +39,13 @@ A modern, real-time chat application with friend codes, private messaging, and a
 
 ### 2. Set Up Database
 
-Run this SQL in your Supabase SQL Editor:
+**Important:** Use the complete migration file for all features.
+
+Run the SQL migration in your Supabase SQL Editor:
+- **File:** `docs/database/DATABASE_UPDATES.sql`
+- **Contains:** All tables, policies, functions, and triggers
+
+Or run the basic setup below (legacy):
 
 ```sql
 -- Create users table with friend codes
@@ -103,59 +126,196 @@ Then navigate to:
 - **Admin Panel**: `pages/admin.html`
 - **Chat Interface**: `pages/chat.html`
 
+### 3. Create Storage Bucket
+
+For image sharing:
+1. Go to Supabase Storage
+2. Create new bucket: `chat-images`
+3. Set access to **Public**
+4. RLS policies are included in the SQL migration
+
+### 4. Configure Application
+
+1. Open `js/config.js`
+2. Replace `YOUR_SUPABASE_URL` with your Supabase project URL
+3. Replace `YOUR_SUPABASE_ANON_KEY` with your anon/public API key
+
+### 5. Deploy
+
+**Option 1: Vercel (Recommended)**
+```bash
+git push origin main
+# Vercel auto-deploys!
+```
+
+**Option 2: Local Development**
+```bash
+# Using Python
+python -m http.server 8000
+
+# Using Node.js
+npx serve
+```
+
 ## 📁 Project Structure
 
 ```
 Quick Chat/
-├── pages/
-│   ├── index.html      # Landing page
-│   ├── admin.html      # Admin dashboard
-│   └── chat.html       # Chat interface
-├── css/
-│   └── styles.css      # Global styles
-├── js/
-│   ├── config.js       # Supabase configuration
-│   └── supabase-init.js # Supabase initialization
-└── README.md           # This file
+├── docs/                      # 📚 Documentation
+│   ├── README.md             # Documentation index
+│   ├── features/             # Feature documentation
+│   ├── guides/               # Implementation guides
+│   └── database/             # SQL migrations
+├── pages/                     # HTML pages
+│   ├── index.html            # Landing page
+│   ├── auth.html             # Authentication
+│   ├── chat.html             # Main chat interface
+│   ├── settings.html         # User settings
+│   ├── admin.html            # Admin dashboard
+│   └── admin-login.html      # Admin login
+├── css/                       # Stylesheets
+│   ├── dark-theme.css        # Main theme
+│   ├── theme-system.css      # Theme toggle
+│   ├── mobile.css            # Mobile responsive
+│   ├── images.css            # Image UI
+│   └── groups.css            # Groups UI
+├── js/                        # JavaScript
+│   ├── config.js             # Configuration
+│   ├── supabase-init.js      # Supabase setup
+│   ├── theme-toggle.js       # Theme switching
+│   ├── images.js             # Image handling
+│   └── groups.js             # Groups system
+├── favicon.svg                # App icon
+├── favicon-admin.svg          # Admin icon
+└── README.md                  # This file
 ```
 
 ## 🎨 Usage
 
-### Admin Panel
-1. Open `pages/admin.html`
-2. Create users by entering username and display name
-3. Each user gets a unique 6-character friend code automatically
-4. View all active users with their friend codes
-5. Delete individual users or end session (clears everything)
+### Getting Started
+1. **Sign Up**: Create your account at `pages/auth.html`
+2. **Add Friends**: Use their 6-character friend code
+3. **Start Chatting**: Select a friend and send messages
+4. **Create Groups**: Click + in Groups section
+5. **Share Images**: Click 📎 to attach images
 
-### Chat Interface
-1. Open `pages/chat.html`
-2. Select your user account from the dropdown
-3. Your friend code is displayed at the top
-4. **Add Friends**: Enter a friend's code and click ➕
-5. Click on a friend to start chatting
-6. Messages are private - only you and your friend can see them
-7. Real-time updates for instant messaging!
+### Friend System
+- Each user gets a unique 6-character code
+- Share your code with friends
+- Add friends using their codes
+- View friend profiles by clicking their name
+
+### Group Chats
+- Create groups with unique codes
+- Add members using friend codes
+- Chat with multiple people
+- Admin controls for group management
+
+### Image Sharing
+- Click 📎 attachment button
+- Select image from device
+- Add optional caption
+- Send to friends or groups
+- View full-size images
+- Download shared images
+
+### Customization
+- Toggle dark/light theme (☀️/🌙 button)
+- Set custom background image
+- Customize profile avatar
+- Choose your color theme
+
+### Mobile Usage
+- Swipe to open/close sidebar
+- Touch-friendly buttons
+- Optimized for all screen sizes
+- Install as PWA on mobile
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Backend**: Supabase (PostgreSQL + Realtime)
-- **Styling**: Custom CSS with gradients and animations
+- **Backend**: Supabase (PostgreSQL + Realtime + Storage)
+- **Styling**: Custom CSS with responsive design
+- **Hosting**: Vercel (recommended)
+- **Database**: PostgreSQL with Row Level Security
+- **Storage**: Supabase Storage for images
+- **Real-time**: Supabase Realtime subscriptions
+
+## 📚 Documentation
+
+Complete documentation available in `docs/`:
+
+- **[Documentation Index](docs/README.md)** - Start here
+- **[Implementation Guide](docs/guides/IMPLEMENTATION_GUIDE.md)** - Setup instructions
+- **[Deployment Checklist](docs/guides/DEPLOYMENT_CHECKLIST.md)** - Launch guide
+- **[Features Implemented](docs/features/FEATURES_IMPLEMENTED.md)** - Feature list
+- **[Database Schema](docs/database/DATABASE_UPDATES.sql)** - Complete SQL
 
 ## 📝 Notes
 
 - All data is stored in Supabase
 - Real-time updates using Supabase Realtime
+- Images stored in Supabase Storage
 - Friend codes are unique 6-character alphanumeric codes
-- Messages are private between friends only
-- Session clearing removes all users, friendships, and messages
-- No authentication required (adjust RLS policies for production)
+- Group codes are auto-generated unique 6-character codes
+- Messages are private (DM) or group-based
+- Row Level Security enforces access control
+- Mobile-first responsive design
 
-## 🔒 Security Note
+## 🔒 Security
 
-This is a demo application. For production use:
-- Implement proper authentication
-- Adjust Row Level Security policies
-- Add rate limiting
-- Validate all inputs server-side
+**Built-in Security:**
+- Row Level Security (RLS) on all tables
+- Secure authentication with Supabase Auth
+- Private messages visible only to participants
+- Group messages visible only to members
+- Image upload validation (size, type)
+- Secure file storage with access control
+
+**For Production:**
+- ✅ RLS policies already configured
+- ✅ Secure authentication implemented
+- ✅ Input validation on frontend
+- ⚠️ Consider rate limiting
+- ⚠️ Monitor storage usage
+- ⚠️ Set up error tracking
+
+## 🚀 Deployment
+
+**Quick Deploy:**
+```bash
+# 1. Run database migration
+# See: docs/database/DATABASE_UPDATES.sql
+
+# 2. Create storage bucket
+# Bucket name: chat-images (Public)
+
+# 3. Deploy to Vercel
+git push origin main
+```
+
+**Full deployment guide:** [docs/guides/DEPLOYMENT_CHECKLIST.md](docs/guides/DEPLOYMENT_CHECKLIST.md)
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add documentation
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - feel free to use for personal or commercial projects
+
+## 🙏 Acknowledgments
+
+Built with:
+- [Supabase](https://supabase.com) - Backend & Database
+- [Vercel](https://vercel.com) - Hosting
+- Modern web technologies
+
+---
+
+**Ready to chat?** 🚀 [Get Started](docs/guides/IMPLEMENTATION_GUIDE.md)
