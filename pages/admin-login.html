@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Quick Chat</title>
+    <link rel="stylesheet" href="../css/dark-theme.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .auth-logo {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .auth-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .auth-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .password-toggle {
+            position: relative;
+        }
+
+        .password-toggle input {
+            padding-right: 45px;
+        }
+
+        .password-toggle button {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <div class="auth-logo">👑</div>
+            <h1 class="auth-title">Admin Panel</h1>
+            <p class="auth-subtitle">Sign in with your admin account</p>
+        </div>
+
+        <div class="card">
+            <div id="error-container"></div>
+
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label for="admin-email">Email</label>
+                    <input type="email" id="admin-email" placeholder="admin@example.com" required>
+                </div>
+
+                <div class="form-group password-toggle">
+                    <label for="admin-password">Password</label>
+                    <input type="password" id="admin-password" placeholder="••••••••" required>
+                    <button type="button" onclick="togglePassword('admin-password')">👁️</button>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-full">
+                    <span id="login-text">Sign In as Admin</span>
+                    <span id="login-spinner" class="spinner" style="display: none;"></span>
+                </button>
+
+                <div class="text-center mt-3">
+                    <a href="index.html" class="text-secondary" style="font-size: 14px;">← Back to home</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/supabase-init.js"></script>
+    <script>
+        const supabase_client = initSupabase();
+
+        // Check if already logged in as admin
+        supabase_client.auth.getSession().then(async ({ data: { session } }) => {
+            if (session) {
+                try {
+                    // Check if user is admin
+                    const { data: user, error } = await supabase_client
+                        .from('users')
+                        .select('role')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (error) {
+                        console.error('Error checking user role:', error);
+                        showError('Error checking user role. Please try again.');
+                        await supabase_client.auth.signOut();
+                        return;
+                    }
+
+                    if (user && user.role === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        showError('You do not have admin privileges');
+                        await supabase_client.auth.signOut();
+                    }
+                } catch (err) {
+                    console.error('Exception:', err);
+                    await supabase_client.auth.signOut();
+                }
+            }
+        });
+
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Show error
+        function showError(message) {
+            const container = document.getElementById('error-container');
+            container.innerHTML = `<div class="error-message">${escapeHtml(message)}</div>`;
+        }
+
+        // Clear error
+        function clearError() {
+            document.getElementById('error-container').innerHTML = '';
+        }
+
+        // Admin Login
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearError();
+            
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            
+            document.getElementById('login-text').style.display = 'none';
+            document.getElementById('login-spinner').style.display = 'block';
+            
+            try {
+                // Sign in
+                const { data: authData, error: authError } = await supabase_client.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (authError) throw authError;
+
+                console.log('Signed in, checking admin role...');
+
+                // Wait a moment for the trigger to create user profile
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Check if user is admin
+                const { data: user, error: userError } = await supabase_client
+                    .from('users')
+                    .select('role')
+                    .eq('id', authData.user.id)
+                    .single();
+
+                console.log('User data:', user, 'Error:', userError);
+
+                if (userError) {
+                    await supabase_client.auth.signOut();
+                    throw new Error('User profile not found. Please contact administrator.');
+                }
+
+                if (!user || user.role !== 'admin') {
+                    await supabase_client.auth.signOut();
+                    throw new Error('Access denied. Admin privileges required.');
+                }
+                
+                showNotification('Welcome, Admin!', 'success');
+                setTimeout(() => window.location.href = 'admin.html', 1000);
+            } catch (error) {
+                console.error('Admin login error:', error);
+                showError(error.message || 'Failed to sign in');
+                document.getElementById('login-text').style.display = 'block';
+                document.getElementById('login-spinner').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
