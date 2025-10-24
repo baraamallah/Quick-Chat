@@ -267,16 +267,7 @@ async function createGroup(name, description = '') {
         
         if (groupError) throw groupError;
         
-        // Add creator as admin
-        const { error: memberError } = await supabaseClient
-            .from('group_members')
-            .insert({
-                group_id: group.id,
-                user_id: currentUser.id,
-                role: 'admin'
-            });
-        
-        if (memberError) throw memberError;
+        // Note: Creator is automatically added as admin by database trigger
         
         showNotification(`Group "${name}" created!`, 'success');
         await loadGroups();
