@@ -712,8 +712,8 @@
                         </div>
                     </div>
                     <div class="header-actions">
-                        <button class="icon-btn" onclick="selectedFriend && openProfileModal(selectedFriend.id)" title="View Profile">👤</button>
-                        <button class="icon-btn" onclick="removeFriend()" title="Remove Friend">🗑️</button>
+                        <button class="icon-btn" id="chatActionBtn1" onclick="selectedFriend ? openProfileModal(selectedFriend.id) : openGroupSettings()" title="View Profile">👤</button>
+                        <button class="icon-btn" id="chatActionBtn2" onclick="selectedFriend ? removeFriend() : leaveGroupFromChat()" title="Remove Friend">🗑️</button>
                     </div>
                 </div>
 
@@ -846,6 +846,35 @@
             <div class="modal-actions">
                 <button class="btn-secondary" onclick="closeCreateGroupModal()">Cancel</button>
                 <button class="btn-primary" onclick="handleCreateGroup()">Create Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Settings Modal -->
+    <div class="group-settings-modal" id="groupSettingsModal" onclick="if(event.target === this) closeGroupSettings()">
+        <div class="group-settings-content">
+            <button class="profile-modal-close" onclick="closeGroupSettings()">×</button>
+            
+            <div class="group-settings-header">
+                <div class="group-avatar-large" id="groupSettingsAvatar"></div>
+                <div class="group-settings-name" id="groupSettingsName">Loading...</div>
+                <div class="group-settings-code" id="groupSettingsCode">------</div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">Members</div>
+                <div id="groupMembersList">
+                    <div class="empty-state">
+                        <div class="empty-state-text">Loading members...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="danger-zone">
+                <h4>⚠️ Danger Zone</h4>
+                <button class="btn-danger" onclick="deleteGroupConfirmation()">
+                    🗑️ Delete Group
+                </button>
             </div>
         </div>
     </div>
@@ -1064,12 +1093,24 @@
             selectedFriend = friends.find(f => f.id === friendId);
             if (!selectedFriend) return;
 
+            selectedGroup = null; // Clear group selection
+            messages = []; // Clear previous messages
+
+            // Unsubscribe from group messages if any
+            if (window.groupMessageSubscription) {
+                window.groupMessageSubscription.unsubscribe();
+                window.groupMessageSubscription = null;
+            }
+
             // Update UI
             document.getElementById('emptyChat').style.display = 'none';
             document.getElementById('chatView').style.display = 'flex';
 
-            // Update chat header
+            // Update chat header with proper styling cleanup
             const avatar = document.getElementById('chatFriendAvatar');
+            avatar.style.background = ''; // Reset background
+            avatar.style.color = '';
+            
             if (selectedFriend.avatar_url) {
                 avatar.innerHTML = `<img src="${escapeHtml(selectedFriend.avatar_url)}" alt="${escapeHtml(selectedFriend.display_name)}">`;
             } else {
@@ -1083,23 +1124,65 @@
             renderFriends();
             loadMessages();
             subscribeToMessages();
+            updateChatActions();
+            
+            // Also refresh groups to update active state
+            if (typeof renderGroups === 'function') {
+                renderGroups();
+            }
+        }
+
+        // Update chat action buttons based on selected chat
+        function updateChatActions() {
+            const btn1 = document.getElementById('chatActionBtn1');
+            const btn2 = document.getElementById('chatActionBtn2');
+            
+            if (!btn1 || !btn2) return; // Safety check
+            
+            if (selectedGroup && !selectedFriend) {
+                // Group chat
+                btn1.title = 'Group Settings';
+                btn1.innerHTML = '⚙️';
+                btn2.title = 'Leave Group';
+                btn2.innerHTML = '🚪';
+            } else if (selectedFriend) {
+                // Friend chat
+                btn1.title = 'View Profile';
+                btn1.innerHTML = '👤';
+                btn2.title = 'Remove Friend';
+                btn2.innerHTML = '🗑️';
+            } else {
+                // No chat selected, reset to defaults
+                btn1.title = '';
+                btn1.innerHTML = '';
+                btn2.title = '';
+                btn2.innerHTML = '';
+            }
         }
 
         // Load messages
         async function loadMessages() {
-            if (!selectedFriend) return;
+            // Messages are loaded by loadGroupMessages for groups
+            // This is only for direct friend messages
+            if (!selectedFriend || selectedGroup) return;
 
             try {
+                // Store the friend ID to check against race conditions
+                const friendId = selectedFriend.id;
+                
                 const { data, error } = await supabaseClient
                     .from('messages')
                     .select('*')
-                    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${selectedFriend.id}),and(sender_id.eq.${selectedFriend.id},receiver_id.eq.${currentUser.id})`)
+                    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${currentUser.id})`)
                     .order('created_at', { ascending: true });
 
                 if (error) throw error;
 
-                messages = data || [];
-                renderMessages();
+                // Check if we're still viewing the same friend
+                if (selectedFriend && selectedFriend.id === friendId && !selectedGroup) {
+                    messages = data || [];
+                    renderMessages();
+                }
             } catch (error) {
                 console.error('Error loading messages:', error);
                 showNotification('Failed to load messages', 'error');
@@ -1171,23 +1254,30 @@
         async function sendMessage(event) {
             event.preventDefault();
 
-            if (!selectedFriend) return;
-
             const input = document.getElementById('messageInput');
             const content = input.value.trim();
 
             if (!content) return;
 
             try {
-                const { error } = await supabaseClient
-                    .from('messages')
-                    .insert({
-                        sender_id: currentUser.id,
-                        receiver_id: selectedFriend.id,
-                        content: content
-                    });
+                // Check if it's a group message or direct message
+                if (selectedGroup && !selectedFriend) {
+                    // Group message
+                    await sendGroupMessage(content);
+                } else if (selectedFriend) {
+                    // Direct message
+                    const { error } = await supabaseClient
+                        .from('messages')
+                        .insert({
+                            sender_id: currentUser.id,
+                            receiver_id: selectedFriend.id,
+                            content: content
+                        });
 
-                if (error) throw error;
+                    if (error) throw error;
+                } else {
+                    return; // No chat selected
+                }
 
                 input.value = '';
                 input.style.height = 'auto';
@@ -1278,36 +1368,51 @@
 
         // Subscribe to messages for current chat
         function subscribeToMessages() {
-            if (!selectedFriend) return;
-
             // Unsubscribe from previous
             if (messageSubscription) {
                 messageSubscription.unsubscribe();
+                messageSubscription = null;
             }
+
+            // Don't subscribe if no chat is selected
+            if (!selectedFriend && !selectedGroup) return;
+
+            // Store current chat IDs to check against
+            const currentFriendId = selectedFriend?.id;
+            const currentGroupId = selectedGroup?.id;
 
             // Subscribe to new messages
             messageSubscription = supabaseClient
-                .channel(`messages-${selectedFriend.id}`)
+                .channel(`messages-${selectedFriend?.id || selectedGroup?.id}`)
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
-                    table: 'messages',
-                    filter: `sender_id=eq.${selectedFriend.id}`
+                    table: 'messages'
                 }, (payload) => {
-                    if (payload.new.receiver_id === currentUser.id) {
-                        messages.push(payload.new);
-                        renderMessages();
-                    }
-                })
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `sender_id=eq.${currentUser.id}`
-                }, (payload) => {
-                    if (payload.new.receiver_id === selectedFriend.id) {
-                        messages.push(payload.new);
-                        renderMessages();
+                    const message = payload.new;
+                    
+                    // Prevent duplicate messages
+                    if (messages.some(m => m.id === message.id)) return;
+                    
+                    // Check if message is for current chat (verify against stored IDs)
+                    if (currentFriendId && selectedFriend) {
+                        // Direct message
+                        if ((message.sender_id === currentUser.id && message.receiver_id === currentFriendId) ||
+                            (message.receiver_id === currentUser.id && message.sender_id === currentFriendId)) {
+                            messages.push(message);
+                            renderMessages();
+                        }
+                    } else if (currentGroupId && selectedGroup) {
+                        // Group message
+                        if (message.group_id === currentGroupId) {
+                            messages.push(message);
+                            // Use renderGroupMessages if available
+                            if (typeof renderGroupMessages === 'function') {
+                                renderGroupMessages();
+                            } else {
+                                renderMessages();
+                            }
+                        }
                     }
                 })
                 .subscribe();

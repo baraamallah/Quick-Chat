@@ -79,6 +79,13 @@ async function selectGroup(groupId) {
     
     selectedGroup = group;
     selectedFriend = null; // Clear friend selection
+    messages = []; // Clear previous messages
+    
+    // Unsubscribe from friend messages if any
+    if (typeof messageSubscription !== 'undefined' && messageSubscription) {
+        messageSubscription.unsubscribe();
+        messageSubscription = null;
+    }
     
     // Update UI
     renderGroups();
@@ -88,15 +95,24 @@ async function selectGroup(groupId) {
     document.getElementById('emptyChat').style.display = 'none';
     document.getElementById('chatView').style.display = 'flex';
     
-    // Update header
+    // Update header with proper styling cleanup
+    const avatar = document.getElementById('chatFriendAvatar');
+    avatar.style.background = ''; // Reset
+    avatar.style.color = '';
+    
     const avatarContent = group.avatar_url 
         ? `<img src="${escapeHtml(group.avatar_url)}" alt="${escapeHtml(group.name)}">` 
         : group.name.charAt(0).toUpperCase();
     
-    document.getElementById('chatFriendAvatar').innerHTML = avatarContent;
-    document.getElementById('chatFriendAvatar').style.background = group.color;
+    avatar.innerHTML = avatarContent;
+    avatar.style.background = group.color;
     document.getElementById('chatFriendName').textContent = group.name;
     document.getElementById('chatFriendStatus').textContent = `Group • ${group.group_code}`;
+    
+    // Update chat actions
+    if (typeof updateChatActions === 'function') {
+        updateChatActions();
+    }
     
     // Load group messages
     await loadGroupMessages(groupId);
@@ -121,10 +137,60 @@ async function loadGroupMessages(groupId) {
         
         // Mark as read
         await updateGroupLastRead(groupId);
+        
+        // Subscribe to new group messages
+        subscribeToGroupMessages(groupId);
     } catch (error) {
         console.error('Load group messages error:', error);
         showNotification('Failed to load messages', 'error');
     }
+}
+
+// Subscribe to group messages
+function subscribeToGroupMessages(groupId) {
+    // Unsubscribe from previous if exists
+    if (window.groupMessageSubscription) {
+        window.groupMessageSubscription.unsubscribe();
+        window.groupMessageSubscription = null;
+    }
+    
+    // Only subscribe if we're still viewing this group
+    if (!selectedGroup || selectedGroup.id !== groupId) return;
+    
+    window.groupMessageSubscription = supabaseClient
+        .channel(`group-messages-${groupId}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `group_id=eq.${groupId}`
+        }, async (payload) => {
+            // Double-check we're still viewing this group
+            if (!selectedGroup || selectedGroup.id !== groupId) return;
+            
+            const message = payload.new;
+            
+            // Check if message already exists (prevent duplicates)
+            if (messages.some(m => m.id === message.id)) return;
+            
+            // Fetch sender info
+            const { data: sender } = await supabaseClient
+                .from('users')
+                .select('id, display_name, avatar_url, color')
+                .eq('id', message.sender_id)
+                .single();
+            
+            message.sender = sender;
+            messages.push(message);
+            
+            if (typeof renderGroupMessages === 'function') {
+                renderGroupMessages();
+            }
+            
+            // Mark as read
+            await updateGroupLastRead(groupId);
+        })
+        .subscribe();
 }
 
 // Render group messages
@@ -373,4 +439,187 @@ async function handleCreateGroup() {
     }
     
     await createGroup(name, description);
+}
+
+// Global variables for group management
+let groupMembers = [];
+let currentUserGroupRole = null;
+
+// Open group settings modal
+async function openGroupSettings() {
+    if (!selectedGroup) return;
+    
+    document.getElementById('groupSettingsModal').classList.add('active');
+    
+    // Set group info
+    const avatarContent = selectedGroup.avatar_url 
+        ? `<img src="${escapeHtml(selectedGroup.avatar_url)}" alt="${escapeHtml(selectedGroup.name)}">` 
+        : selectedGroup.name.charAt(0).toUpperCase();
+    
+    document.getElementById('groupSettingsAvatar').innerHTML = avatarContent;
+    document.getElementById('groupSettingsAvatar').style.background = selectedGroup.color;
+    document.getElementById('groupSettingsName').textContent = selectedGroup.name;
+    document.getElementById('groupSettingsCode').textContent = selectedGroup.group_code;
+    
+    // Load group members
+    await loadGroupMembers(selectedGroup.id);
+}
+
+// Close group settings modal
+function closeGroupSettings() {
+    const modal = document.getElementById('groupSettingsModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    
+    // Clear modal data
+    groupMembers = [];
+    currentUserGroupRole = null;
+}
+
+// Load group members
+async function loadGroupMembers(groupId) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('group_members')
+            .select(`
+                role,
+                joined_at,
+                user:users!group_members_user_id_fkey(
+                    id,
+                    display_name,
+                    avatar_url,
+                    color,
+                    username
+                )
+            `)
+            .eq('group_id', groupId);
+        
+        if (error) throw error;
+        
+        groupMembers = data || [];
+        
+        // Find current user's role
+        const currentUserMember = groupMembers.find(m => m.user.id === currentUser.id);
+        currentUserGroupRole = currentUserMember ? currentUserMember.role : null;
+        
+        renderGroupMembers();
+    } catch (error) {
+        console.error('Load group members error:', error);
+        showNotification('Failed to load members', 'error');
+    }
+}
+
+// Render group members
+function renderGroupMembers() {
+    const container = document.getElementById('groupMembersList');
+    
+    if (!groupMembers.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-text">No members</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = groupMembers.map(member => {
+        const isCurrentUser = member.user.id === currentUser.id;
+        const isAdmin = currentUserGroupRole === 'admin';
+        const canRemove = isAdmin && !isCurrentUser;
+        
+        const avatarContent = member.user.avatar_url 
+            ? `<img src="${escapeHtml(member.user.avatar_url)}" alt="${escapeHtml(member.user.display_name)}">` 
+            : member.user.display_name.charAt(0).toUpperCase();
+        
+        return `
+            <div class="member-item">
+                <div class="avatar avatar-sm" style="background: ${member.user.color}">
+                    ${avatarContent}
+                </div>
+                <div class="member-info">
+                    <div class="member-name">${escapeHtml(member.user.display_name)}${isCurrentUser ? ' (You)' : ''}</div>
+                    <div class="member-role ${member.role}">${member.role}</div>
+                </div>
+                ${canRemove ? `
+                    <button class="icon-btn" onclick="removeMemberFromGroup('${member.user.id}', '${member.user.display_name}')" title="Remove Member">
+                        🗑️
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Remove member from group
+async function removeMemberFromGroup(userId, userName) {
+    if (!selectedGroup) return;
+    
+    if (!confirm(`Are you sure you want to remove ${userName} from ${selectedGroup.name}?`)) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('group_members')
+            .delete()
+            .eq('group_id', selectedGroup.id)
+            .eq('user_id', userId);
+        
+        if (error) throw error;
+        
+        showNotification(`${userName} removed from group`, 'success');
+        await loadGroupMembers(selectedGroup.id);
+        
+        // If current user was removed, refresh groups
+        if (userId === currentUser.id) {
+            await loadGroups();
+            selectedGroup = null;
+            document.getElementById('chatView').style.display = 'none';
+            document.getElementById('emptyChat').style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Remove member error:', error);
+        showNotification('Failed to remove member', 'error');
+    }
+}
+
+// Delete group confirmation
+async function deleteGroupConfirmation() {
+    if (!selectedGroup) return;
+    
+    if (!confirm(`Are you sure you want to delete "${selectedGroup.name}"? This will delete all messages and cannot be undone.`)) return;
+    if (!confirm('This action cannot be reversed. Continue?')) return;
+    
+    await deleteGroup(selectedGroup.id);
+}
+
+// Delete group
+async function deleteGroup(groupId) {
+    try {
+        const { error } = await supabaseClient
+            .from('groups')
+            .delete()
+            .eq('id', groupId);
+        
+        if (error) throw error;
+        
+        showNotification('Group deleted successfully', 'success');
+        closeGroupSettings();
+        
+        // Reset chat view
+        selectedGroup = null;
+        document.getElementById('chatView').style.display = 'none';
+        document.getElementById('emptyChat').style.display = 'flex';
+        
+        // Reload groups
+        await loadGroups();
+    } catch (error) {
+        console.error('Delete group error:', error);
+        showNotification('Failed to delete group', 'error');
+    }
+}
+
+// Leave group from chat (wrapper)
+async function leaveGroupFromChat() {
+    if (!selectedGroup) return;
+    await leaveGroup(selectedGroup.id);
 }
