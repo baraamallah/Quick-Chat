@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="../favicon-admin.svg">
     <link rel="stylesheet" href="../css/dark-theme.css">
     <link rel="stylesheet" href="../css/theme-system.css">
+    <link rel="stylesheet" href="../css/verification.css">
     <style>
         body {
             padding: 20px;
@@ -302,6 +303,7 @@
                         <th>User</th>
                         <th>Friend Code</th>
                         <th>Role</th>
+                        <th>Verified</th>
                         <th>Status</th>
                         <th>Joined</th>
                         <th>Actions</th>
@@ -309,7 +311,7 @@
                 </thead>
                 <tbody id="usersTableBody">
                     <tr>
-                        <td colspan="6" class="text-center text-muted">Loading...</td>
+                        <td colspan="7" class="text-center text-muted">Loading...</td>
                     </tr>
                 </tbody>
             </table>
@@ -455,7 +457,7 @@
             const tbody = document.getElementById('usersTableBody');
             
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No users found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No users found</td></tr>';
                 return;
             }
 
@@ -480,6 +482,11 @@
                         </span>
                     </td>
                     <td>
+                        <span class="verification-status ${user.is_verified ? 'verified' : 'unverified'}">
+                            ${user.is_verified ? '✓ Verified' : '○ Unverified'}
+                        </span>
+                    </td>
+                    <td>
                         <span class="badge ${user.is_online ? 'badge-online' : 'badge-offline'}">
                             ${user.is_online ? '🟢 Online' : '⚫ Offline'}
                         </span>
@@ -488,6 +495,9 @@
                     <td>
                         <div class="action-buttons">
                             <button onclick="viewUser('${user.id}')" class="btn btn-secondary btn-sm">View</button>
+                            <button onclick="toggleVerification('${user.id}', ${user.is_verified})" class="verify-btn ${user.is_verified ? 'verified' : ''}">
+                                ${user.is_verified ? '✓ Verified' : 'Verify'}
+                            </button>
                             <button onclick="toggleRole('${user.id}', '${user.role}')" class="btn btn-secondary btn-sm">
                                 ${user.role === 'admin' ? 'Demote' : 'Promote'}
                             </button>
@@ -623,6 +633,28 @@
             } catch (error) {
                 console.error('Error updating role:', error);
                 showNotification('Failed to update role', 'error');
+            }
+        }
+
+        // Toggle user verification
+        async function toggleVerification(userId, isCurrentlyVerified) {
+            const action = isCurrentlyVerified ? 'unverify' : 'verify';
+            
+            if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('users')
+                    .update({ is_verified: !isCurrentlyVerified })
+                    .eq('id', userId);
+
+                if (error) throw error;
+
+                showNotification(`User ${action}d successfully`, 'success');
+                loadUsers();
+            } catch (error) {
+                console.error('Error toggling verification:', error);
+                showNotification('Failed to toggle verification', 'error');
             }
         }
 

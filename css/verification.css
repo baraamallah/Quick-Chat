@@ -1,0 +1,168 @@
+/* Verification Badge Styles */
+
+.verified-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    margin-left: 6px;
+    font-size: 11px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.verified-badge::before {
+    content: '✓';
+    color: white;
+    font-weight: bold;
+}
+
+/* Optional gradient effect */
+.verified-badge {
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* In chat messages */
+.message .verified-badge {
+    margin-left: 4px;
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
+}
+
+/* In group messages */
+.message-sender .verified-badge {
+    width: 12px;
+    height: 12px;
+    font-size: 8px;
+    margin-left: 3px;
+}
+
+/* In profile modals */
+.profile-modal-name .verified-badge {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+/* In user lists */
+.user-name .verified-badge {
+    margin-left: 4px;
+}
+
+/* In group member lists */
+.member-name .verified-badge {
+    margin-left: 6px;
+    width: 14px;
+    height: 14px;
+    font-size: 9px;
+}
+
+/* Verification status in admin panel */
+.verification-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.verification-status.verified {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.verification-status.unverified {
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+}
+
+/* Verification icon in chat headers */
+.chat-header-verified {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.chat-header-verified::before {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+/* Admin verify button */
+.verify-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.verify-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.verify-btn.verified {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.verify-btn.verified:hover {
+    background: rgba(16, 185, 129, 0.3);
+}
+
+/* Verification tooltip */
+.verified-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.verified-tooltip:hover::after {
+    content: 'Verified Account';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    margin-bottom: 5px;
+    z-index: 1000;
+}
+
+.verified-tooltip:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+}
+

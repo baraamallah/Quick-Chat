@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="../css/mobile.css">
     <link rel="stylesheet" href="../css/images.css">
     <link rel="stylesheet" href="../css/groups.css">
+    <link rel="stylesheet" href="../css/verification.css">
     <style>
         body {
             margin: 0;
@@ -233,6 +234,20 @@
             display: flex;
             flex-direction: column;
             background: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-view {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .chat-view.active {
+            display: flex !important;
         }
 
         .chat-header {
@@ -702,7 +717,7 @@
                 </div>
             </div>
 
-            <div id="chatView" style="display: none; flex: 1; display: flex; flex-direction: column;">
+            <div id="chatView" style="display: none; flex-direction: column;" class="chat-view">
                 <div class="chat-header">
                     <div class="chat-header-info" onclick="selectedFriend && openProfileModal(selectedFriend.id)" style="cursor: pointer;">
                         <div class="avatar" id="chatFriendAvatar"></div>
@@ -1026,11 +1041,14 @@
                             ${avatarHtml}
                         </div>
                         ${friend.is_online ? '<div class="online-indicator"></div>' : ''}
-                        <div class="friend-item-info">
-                            <div class="friend-name">${escapeHtml(friend.display_name)}</div>
-                            <div class="friend-status">${friend.is_online ? '🟢 Online' : '⚫ Offline'}</div>
+                    <div class="friend-item-info">
+                        <div class="friend-name">
+                            ${escapeHtml(friend.display_name)}
+                            ${friend.is_verified ? '<span class="verified-badge verified-tooltip"></span>' : ''}
                         </div>
+                        <div class="friend-status">${friend.is_online ? '🟢 Online' : '⚫ Offline'}</div>
                     </div>
+                </div>
                 `;
             }).join('');
         }
@@ -1104,7 +1122,9 @@
 
             // Update UI
             document.getElementById('emptyChat').style.display = 'none';
-            document.getElementById('chatView').style.display = 'flex';
+            const chatView = document.getElementById('chatView');
+            chatView.style.display = 'flex';
+            chatView.classList.add('active');
 
             // Update chat header with proper styling cleanup
             const avatar = document.getElementById('chatFriendAvatar');
@@ -1118,7 +1138,8 @@
                 avatar.textContent = selectedFriend.display_name.charAt(0).toUpperCase();
             }
 
-            document.getElementById('chatFriendName').textContent = selectedFriend.display_name;
+            const nameEl = document.getElementById('chatFriendName');
+            nameEl.innerHTML = `${escapeHtml(selectedFriend.display_name)}${selectedFriend.is_verified ? '<span class="verified-badge verified-tooltip chat-header-verified" style="margin-left: 4px;"></span>' : ''}`;
             document.getElementById('chatFriendStatus').textContent = selectedFriend.is_online ? '🟢 Online' : '⚫ Offline';
 
             renderFriends();
@@ -1308,7 +1329,9 @@
                 
                 // Reset chat view
                 document.getElementById('emptyChat').style.display = 'flex';
-                document.getElementById('chatView').style.display = 'none';
+                const chatView = document.getElementById('chatView');
+                chatView.style.display = 'none';
+                chatView.classList.remove('active');
                 selectedFriend = null;
                 
                 if (messageSubscription) {
@@ -1447,7 +1470,8 @@
                 modalAvatar.textContent = friend.display_name.charAt(0).toUpperCase();
             }
 
-            document.getElementById('modalName').textContent = friend.display_name;
+            const modalNameEl = document.getElementById('modalName');
+            modalNameEl.innerHTML = `${escapeHtml(friend.display_name)}${friend.is_verified ? '<span class="verified-badge verified-tooltip"></span>' : ''}`;
             document.getElementById('modalUsername').textContent = `@${friend.username}`;
             
             // Status

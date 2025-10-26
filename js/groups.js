@@ -93,7 +93,9 @@ async function selectGroup(groupId) {
     
     // Show group chat
     document.getElementById('emptyChat').style.display = 'none';
-    document.getElementById('chatView').style.display = 'flex';
+    const chatView = document.getElementById('chatView');
+    chatView.style.display = 'flex';
+    chatView.classList.add('active');
     
     // Update header with proper styling cleanup
     const avatar = document.getElementById('chatFriendAvatar');
@@ -408,7 +410,9 @@ async function leaveGroup(groupId) {
         await loadGroups();
         
         // Show empty chat
-        document.getElementById('chatView').style.display = 'none';
+        const chatView = document.getElementById('chatView');
+        chatView.style.display = 'none';
+        chatView.classList.remove('active');
         document.getElementById('emptyChat').style.display = 'flex';
     } catch (error) {
         console.error('Leave group error:', error);
@@ -571,10 +575,12 @@ async function removeMemberFromGroup(userId, userName) {
         
         // If current user was removed, refresh groups
         if (userId === currentUser.id) {
-            await loadGroups();
-            selectedGroup = null;
-            document.getElementById('chatView').style.display = 'none';
-            document.getElementById('emptyChat').style.display = 'flex';
+        await loadGroups();
+        selectedGroup = null;
+        const chatView = document.getElementById('chatView');
+        chatView.style.display = 'none';
+        chatView.classList.remove('active');
+        document.getElementById('emptyChat').style.display = 'flex';
         }
     } catch (error) {
         console.error('Remove member error:', error);
@@ -607,7 +613,9 @@ async function deleteGroup(groupId) {
         
         // Reset chat view
         selectedGroup = null;
-        document.getElementById('chatView').style.display = 'none';
+        const chatView = document.getElementById('chatView');
+        chatView.style.display = 'none';
+        chatView.classList.remove('active');
         document.getElementById('emptyChat').style.display = 'flex';
         
         // Reload groups
