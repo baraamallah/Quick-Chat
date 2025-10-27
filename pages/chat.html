@@ -675,11 +675,11 @@
                         type="text" 
                         class="add-friend-input" 
                         id="friendCodeInput"
-                        placeholder="Enter friend code"
+                        placeholder="Enter friend or group code"
                         maxlength="6"
                         required
                     >
-                    <button type="submit" class="icon-btn" title="Add Friend">➕</button>
+                    <button type="submit" class="icon-btn" title="Add Friend or Join Group">➕</button>
                 </form>
             </div>
 
@@ -688,7 +688,7 @@
                 <div class="empty-state">
                     <div class="empty-state-icon">👥</div>
                     <div class="empty-state-title">No friends yet</div>
-                    <div class="empty-state-text">Add friends using their code</div>
+                    <div class="empty-state-text">Add friends or join groups using codes</div>
                 </div>
             </div>
 
@@ -1058,51 +1058,95 @@
             event.preventDefault();
             
             const input = document.getElementById('friendCodeInput');
-            const friendCode = input.value.trim().toUpperCase();
+            const code = input.value.trim().toUpperCase();
 
-            if (friendCode === currentUser.friend_code) {
-                showNotification("You can't add yourself!", 'error');
-                return;
-            }
+            if (!code) return;
 
             try {
-                // Find user by friend code
-                const { data: friend, error: findError } = await supabaseClient
+                // First, try to find a user by friend code
+                const { data: friend, error: findUserError } = await supabaseClient
                     .from('users')
                     .select('*')
-                    .eq('friend_code', friendCode)
+                    .eq('friend_code', code)
                     .single();
 
-                if (findError || !friend) {
-                    showNotification('Friend code not found', 'error');
+                if (friend && !findUserError) {
+                    // Found a user - add as friend
+                    if (friend.id === currentUser.id) {
+                        showNotification("You can't add yourself!", 'error');
+                        return;
+                    }
+
+                    // Check if already friends
+                    const alreadyFriends = friends.some(f => f.id === friend.id);
+                    if (alreadyFriends) {
+                        showNotification('Already friends!', 'error');
+                        return;
+                    }
+
+                    // Create friendship (ensure consistent ordering)
+                    const [user1, user2] = [currentUser.id, friend.id].sort();
+                    
+                    const { error: insertError } = await supabaseClient
+                        .from('friendships')
+                        .insert({
+                            user1_id: user1,
+                            user2_id: user2
+                        });
+
+                    if (insertError) throw insertError;
+
+                    showNotification(`Added ${friend.display_name}!`, 'success');
+                    input.value = '';
+                    loadFriends();
                     return;
                 }
 
-                // Check if already friends
-                const alreadyFriends = friends.some(f => f.id === friend.id);
-                if (alreadyFriends) {
-                    showNotification('Already friends!', 'error');
+                // If no user found, try to find a group by group code
+                const { data: group, error: findGroupError } = await supabaseClient
+                    .from('groups')
+                    .select('*')
+                    .eq('group_code', code)
+                    .single();
+
+                if (group && !findGroupError) {
+                    // Found a group - join it
+                    // Check if already a member
+                    const { data: existingMembership } = await supabaseClient
+                        .from('group_members')
+                        .select('id')
+                        .eq('group_id', group.id)
+                        .eq('user_id', currentUser.id)
+                        .single();
+
+                    if (existingMembership) {
+                        showNotification('Already a member of this group!', 'error');
+                        return;
+                    }
+
+                    // Join the group
+                    const { error: joinError } = await supabaseClient
+                        .from('group_members')
+                        .insert({
+                            group_id: group.id,
+                            user_id: currentUser.id,
+                            role: 'member'
+                        });
+
+                    if (joinError) throw joinError;
+
+                    showNotification(`Joined group "${group.name}"!`, 'success');
+                    input.value = '';
+                    loadGroups();
                     return;
                 }
 
-                // Create friendship (ensure consistent ordering)
-                const [user1, user2] = [currentUser.id, friend.id].sort();
+                // If neither user nor group found
+                showNotification('Code not found. Check the code and try again.', 'error');
                 
-                const { error: insertError } = await supabaseClient
-                    .from('friendships')
-                    .insert({
-                        user1_id: user1,
-                        user2_id: user2
-                    });
-
-                if (insertError) throw insertError;
-
-                showNotification(`Added ${friend.display_name}!`, 'success');
-                input.value = '';
-                loadFriends();
             } catch (error) {
-                console.error('Error adding friend:', error);
-                showNotification('Failed to add friend', 'error');
+                console.error('Error adding friend/joining group:', error);
+                showNotification('Failed to add friend or join group', 'error');
             }
         }
 
