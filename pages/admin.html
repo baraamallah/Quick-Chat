@@ -664,7 +664,38 @@
             if (!confirm('This action cannot be undone. Continue?')) return;
 
             try {
-                const { error } = await supabaseClient.auth.admin.deleteUser(userId);
+                // First, get the user data for cleanup
+                const { data: user } = await supabaseClient
+                    .from('users')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (!user) throw new Error('User not found');
+
+                // Delete messages sent by this user
+                await supabaseClient
+                    .from('messages')
+                    .delete()
+                    .eq('sender_id', userId);
+
+                // Delete friendships (both directions)
+                await supabaseClient
+                    .from('friendships')
+                    .delete()
+                    .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+
+                // Delete group memberships
+                await supabaseClient
+                    .from('group_members')
+                    .delete()
+                    .eq('user_id', userId);
+
+                // Finally, delete the user record
+                const { error } = await supabaseClient
+                    .from('users')
+                    .delete()
+                    .eq('id', userId);
 
                 if (error) throw error;
 
