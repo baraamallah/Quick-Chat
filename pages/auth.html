@@ -267,6 +267,20 @@
                 
                 if (error) throw error;
                 
+                // Create a session for this user
+                const deviceInfo = navigator.userAgent;
+                const ipAddress = ''; // Would be set by server in production
+                
+                try {
+                    await supabaseClient.rpc('create_user_session', {
+                        p_user_id: data.user.id,
+                        p_device_info: deviceInfo,
+                        p_ip_address: ipAddress
+                    });
+                } catch (sessionError) {
+                    console.warn('Failed to create user session:', sessionError);
+                }
+                
                 showNotification('Welcome back!', 'success');
                 setTimeout(() => window.location.href = '/pages/chat.html', 1000);
             } catch (error) {

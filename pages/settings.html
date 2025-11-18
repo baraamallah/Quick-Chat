@@ -308,6 +308,40 @@
             <a href="/pages/admin.html" class="btn btn-primary">Open Admin Panel</a>
         </div>
 
+        <!-- AI Services -->
+        <div class="settings-section">
+            <div class="section-title">🤖 AI Services</div>
+            <p class="text-secondary mb-3">Connect your AI services to enhance your chat experience</p>
+            
+            <div class="form-group">
+                <label for="geminiApiKey">Gemini API Key</label>
+                <div class="password-toggle">
+                    <input type="password" id="geminiApiKey" placeholder="Enter your Gemini API key">
+                    <button type="button" onclick="togglePasswordVisibility('geminiApiKey')">👁️</button>
+                </div>
+                <p class="text-muted" style="font-size: 12px; margin-top: 4px;">
+                    Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: var(--accent-color);">Google AI Studio</a>
+                </p>
+            </div>
+            
+            <div class="form-group">
+                <label for="openaiApiKey">OpenAI API Key</label>
+                <div class="password-toggle">
+                    <input type="password" id="openaiApiKey" placeholder="Enter your OpenAI API key">
+                    <button type="button" onclick="togglePasswordVisibility('openaiApiKey')">👁️</button>
+                </div>
+                <p class="text-muted" style="font-size: 12px; margin-top: 4px;">
+                    Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--accent-color);">OpenAI Platform</a>
+                </p>
+            </div>
+            
+            <button onclick="saveApiKeys()" class="btn btn-primary" id="saveApiKeysBtn">
+                💾 Save API Keys
+            </button>
+            
+            <div id="apiKeysStatus" style="margin-top: 12px; display: none;"></div>
+        </div>
+
         <!-- Danger Zone -->
         <div class="settings-section danger-zone">
             <div class="section-title">⚠️ Danger Zone</div>
@@ -370,6 +404,7 @@
             currentUser = user;
             selectedColor = user.color;
             loadProfile();
+            loadApiKeys();
         }
 
         // Load profile data
@@ -689,6 +724,70 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Save API keys
+        async function saveApiKeys() {
+            const geminiKey = document.getElementById('geminiApiKey').value.trim() || null;
+            const openaiKey = document.getElementById('openaiApiKey').value.trim() || null;
+            
+            const saveBtn = document.getElementById('saveApiKeysBtn');
+            const statusDiv = document.getElementById('apiKeysStatus');
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner"></span> Saving...';
+            statusDiv.style.display = 'none';
+            
+            try {
+                // Call the RPC function to update API keys
+                const { error } = await supabaseClient
+                    .rpc('update_user_api_keys', {
+                        user_id: currentUser.id,
+                        gemini_key: geminiKey,
+                        openai_key: openaiKey
+                    });
+                
+                if (error) throw error;
+                
+                statusDiv.innerHTML = '<div class="alert alert-success">✅ API keys saved successfully!</div>';
+                statusDiv.style.display = 'block';
+                
+                // Update current user object
+                currentUser.gemini_api_key = geminiKey;
+                currentUser.openai_api_key = openaiKey;
+                
+                showNotification('API keys saved successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving API keys:', error);
+                statusDiv.innerHTML = `<div class="alert alert-error">❌ Error: ${escapeHtml(error.message)}</div>`;
+                statusDiv.style.display = 'block';
+                showNotification('Failed to save API keys', 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 Save API Keys';
+                
+                // Hide status after 5 seconds
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Load API keys into form
+        function loadApiKeys() {
+            if (currentUser.gemini_api_key) {
+                document.getElementById('geminiApiKey').value = currentUser.gemini_api_key;
+            }
+            
+            if (currentUser.openai_api_key) {
+                document.getElementById('openaiApiKey').value = currentUser.openai_api_key;
+            }
         }
 
         function showNotification(message, type = 'info') {

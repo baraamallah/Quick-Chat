@@ -336,6 +336,27 @@
         .message.sent .message-time {
             color: rgba(255, 255, 255, 0.7);
         }
+        
+        /* AI Messages */
+        .message.ai {
+            align-self: center;
+            background: rgba(30, 30, 40, 0.8);
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            max-width: 80%;
+        }
+        
+        .message.ai .message-content {
+            background: linear-gradient(135deg, rgba(80, 70, 200, 0.2), rgba(60, 50, 150, 0.2));
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        
+        .ai-model-indicator {
+            font-size: 10px;
+            color: #8b5cf6;
+            text-align: center;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
 
         /* Message Input */
         .message-input-container {
@@ -649,6 +670,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="../css/screensaver.css">
 </head>
 <body>
     <img id="chatBgImage" style="display: none;" alt="">
@@ -749,6 +771,9 @@
                         ></textarea>
                         <button type="submit" class="send-btn" id="sendBtn">
                             <span>📤</span>
+                        </button>
+                        <button type="button" class="send-btn" id="aiBtn" onclick="sendToAI()" title="Send to AI">
+                            <span>🤖</span>
                         </button>
                     </form>
                 </div>
@@ -897,6 +922,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/config.js"></script>
     <script src="../js/supabase-init.js"></script>
+    <script src="../js/api-key-encryption.js"></script>
+    <script src="../js/ai-service.js"></script>
     <script>
         // Initialize Supabase
         supabaseClient = initSupabase();
@@ -934,6 +961,11 @@
             loadFriends();
             loadGroups(); // Load groups
             subscribeToUpdates();
+            
+            // Initialize AI service with user
+            if (typeof aiService !== 'undefined') {
+                await aiService.setUser(user);
+            }
         }
 
         // Update user profile display
@@ -1227,10 +1259,26 @@
 
             container.innerHTML = messages.map(msg => {
                 const isSent = msg.sender_id === currentUser.id;
+                const isAI = msg.sender_id === 'ai';
                 
                 // Handle image messages
                 if (msg.message_type === 'image') {
                     return renderImageMessage(msg, isSent);
+                }
+                
+                // Handle AI messages
+                if (isAI) {
+                    const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    return `
+                        <div class="message ai">
+                            <div class="ai-model-indicator">${msg.ai_model || 'AI'}</div>
+                            <div class="message-content">
+                                <div class="message-text">${escapeHtml(msg.content)}</div>
+                                <div class="message-time">${time}</div>
+                            </div>
+                        </div>
+                    `;
                 }
                 
                 // Handle text messages
@@ -1306,6 +1354,93 @@
                 console.error('Error sending message:', error);
                 showNotification('Failed to send message', 'error');
             }
+        }
+
+        // Send message to AI
+        async function sendToAI() {
+            if (!aiService || !aiService.isConfigured()) {
+                showNotification('Please configure AI services in Settings first', 'error');
+                return;
+            }
+            
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            
+            if (!content) return;
+            
+            // Disable the AI button while processing
+            const aiBtn = document.getElementById('aiBtn');
+            const originalContent = aiBtn.innerHTML;
+            aiBtn.innerHTML = '<span class="spinner"></span>';
+            aiBtn.disabled = true;
+            
+            try {
+                // Show the user's message in the chat
+                addMessageToChat({
+                    id: 'temp-' + Date.now(),
+                    sender_id: currentUser.id,
+                    content: content,
+                    created_at: new Date().toISOString(),
+                    is_temporary: true
+                });
+                
+                input.value = '';
+                input.style.height = 'auto';
+                
+                // Send to AI service
+                const result = await aiService.sendMessage(content);
+                
+                if (result.success) {
+                    // Show AI response in chat
+                    addMessageToChat({
+                        id: 'ai-' + Date.now(),
+                        sender_id: 'ai',
+                        content: result.reply,
+                        created_at: new Date().toISOString(),
+                        ai_model: result.model
+                    });
+                    
+                    showNotification(`Response from ${result.model}`, 'success');
+                } else {
+                    showNotification(`AI Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error sending to AI:', error);
+                showNotification('Failed to send message to AI', 'error');
+            } finally {
+                // Re-enable the AI button
+                aiBtn.innerHTML = originalContent;
+                aiBtn.disabled = false;
+            }
+        }
+        
+        // Add message to chat display
+        function addMessageToChat(message) {
+            const container = document.getElementById('messagesContainer');
+            const isSent = message.sender_id === currentUser.id;
+            const isAI = message.sender_id === 'ai';
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${isSent ? 'sent' : isAI ? 'ai' : 'received'}`;
+            messageElement.dataset.messageId = message.id;
+            
+            // Format timestamp
+            const timestamp = new Date(message.created_at).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            // Add AI model indicator for AI messages
+            const aiIndicator = isAI ? `<div class="ai-model-indicator">${message.ai_model || 'AI'}</div>` : '';
+            
+            messageElement.innerHTML = `
+                ${aiIndicator}
+                <div class="message-content">${escapeHtml(message.content)}</div>
+                <div class="message-time">${timestamp}</div>
+            `;
+            
+            container.appendChild(messageElement);
+            container.scrollTop = container.scrollHeight;
         }
 
         // Remove friend
@@ -1582,6 +1717,7 @@
     <!-- Include additional JS files -->
     <script src="../js/images.js"></script>
     <script src="../js/groups.js"></script>
+    <script src="../js/screensaver.js"></script>
     
     <!-- Theme Toggle -->
     <script src="../js/theme-toggle.js"></script>
