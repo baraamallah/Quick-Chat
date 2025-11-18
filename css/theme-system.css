@@ -1,0 +1,187 @@
+/* Theme System - Light and Dark Mode */
+
+/* Default (Dark Theme) */
+:root[data-theme="dark"] {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f1419;
+    --text-primary: #ffffff;
+    --text-secondary: #b0b3b8;
+    --text-muted: #8b8d94;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --accent-color: #667eea;
+    --accent-hover: #5568d3;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --overlay: rgba(0, 0, 0, 0.5);
+}
+
+/* Light Theme */
+:root[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f3f4f6;
+    --bg-tertiary: #e5e7eb;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #6b7280;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --accent-color: #667eea;
+    --accent-hover: #5568d3;
+    --success-color: #10b981;
+    --error-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+    --shadow: rgba(0, 0, 0, 0.1);
+    --overlay: rgba(0, 0, 0, 0.3);
+}
+
+/* Theme Toggle Button - Inline in header */
+.icon-btn.theme-toggle-btn {
+    /* Inherits icon-btn styles, no additional positioning needed */
+    font-size: 18px;
+}
+
+.icon-btn.theme-toggle-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Theme Toggle Button - Floating (fallback for pages without header-actions) */
+body > .theme-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    border: 2px solid var(--border-color);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px var(--shadow);
+    transition: all 0.3s ease;
+    z-index: 9999;
+    padding: 0;
+}
+
+body > .theme-toggle-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 6px 20px var(--shadow);
+}
+
+body > .theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+/* Smooth transitions for theme changes */
+body,
+.card,
+.btn,
+.input,
+.textarea,
+.sidebar,
+.header,
+.message,
+.notification {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Light theme specific adjustments */
+:root[data-theme="light"] body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .settings-section,
+:root[data-theme="light"] .auth-container,
+:root[data-theme="light"] .sidebar {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder {
+    color: var(--text-muted);
+}
+
+:root[data-theme="light"] .message {
+    background: var(--bg-tertiary);
+}
+
+:root[data-theme="light"] .message.sent {
+    background: var(--accent-color);
+    color: white;
+}
+
+/* Light theme shadows */
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .btn,
+:root[data-theme="light"] .auth-container {
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+/* Light theme borders */
+:root[data-theme="light"] .border,
+:root[data-theme="light"] .divider {
+    border-color: var(--border-color);
+}
+
+/* Ensure text is readable in light mode */
+:root[data-theme="light"] .text-secondary {
+    color: var(--text-secondary);
+}
+
+:root[data-theme="light"] .text-muted {
+    color: var(--text-muted);
+}
+
+/* Light theme for specific components */
+:root[data-theme="light"] .friend-item:hover,
+:root[data-theme="light"] .user-card:hover {
+    background: var(--bg-tertiary);
+}
+
+:root[data-theme="light"] .stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* Light theme scrollbar */
+:root[data-theme="light"] ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+:root[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+}
+
+:root[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .theme-toggle-btn {
+        bottom: 15px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+}
