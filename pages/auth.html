@@ -321,58 +321,13 @@
                 
                 if (error) throw error;
                 
-                // Wait a moment for the trigger to create the user profile
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Check if user profile was created by trigger
-                const { data: userProfile, error: profileError } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('id', data.user.id)
-                    .single();
-                
-                // If trigger didn't create profile, create it manually
-                if (profileError || !userProfile) {
-                    console.log('Trigger did not create profile, creating manually...');
-                    
-                    // Generate unique friend code
-                    let friendCode;
-                    let isUnique = false;
-                    while (!isUnique) {
-                        friendCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-                        const { data: existing } = await supabaseClient
-                            .from('users')
-                            .select('friend_code')
-                            .eq('friend_code', friendCode)
-                            .single();
-                        isUnique = !existing;
-                    }
-                    
-                    // Create user profile
-                    const username = email.split('@')[0];
-                    const { error: insertError } = await supabaseClient
-                        .from('users')
-                        .insert({
-                            id: data.user.id,
-                            email: email,
-                            username: username,
-                            display_name: username,
-                            color: '#667eea',
-                            friend_code: friendCode,
-                            role: 'user',
-                            bio: '',
-                            avatar_url: '',
-                            bg_image_url: ''
-                        });
-                    
-                    if (insertError) {
-                        console.error('Failed to create user profile:', insertError);
-                        throw new Error('Failed to create user profile. Please contact support.');
-                    }
-                }
-                
-                showNotification('Account created! Redirecting...', 'success');
-                setTimeout(() => window.location.href = '/pages/chat.html', 1500);
+                showNotification('Account created! Please check your email for a verification link.', 'success');
+                setTimeout(() => {
+                    // Redirect to login or a "check your email" page
+                    switchTab('signin'); 
+                    document.getElementById('signin-email').value = email;
+                    document.getElementById('signup-form').reset();
+                }, 2000);
             } catch (error) {
                 console.error('Sign up error:', error);
                 showError(error.message || 'Failed to create account');

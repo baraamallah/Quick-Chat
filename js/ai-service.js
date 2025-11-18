@@ -3,6 +3,8 @@ class AIService {
   constructor() {
     this.geminiApiKey = null;
     this.openaiApiKey = null;
+    this.geminiApiAddress = null;
+    this.openaiApiAddress = null;
     this.currentUser = null;
     this.encryption = new (typeof ApiKeyEncryption !== 'undefined' ? ApiKeyEncryption : class { 
       simpleDecrypt(key) { return key; } 
@@ -22,7 +24,7 @@ class AIService {
     try {
       const { data, error } = await supabaseClient
         .from('users')
-        .select('gemini_api_key, openai_api_key')
+        .select('gemini_api_key, openai_api_key, gemini_api_address, openai_api_address')
         .eq('id', this.currentUser.id)
         .single();
         
@@ -31,13 +33,15 @@ class AIService {
       // Decrypt API keys if encryption is available
       this.geminiApiKey = this.encryption.simpleDecrypt(data.gemini_api_key);
       this.openaiApiKey = this.encryption.simpleDecrypt(data.openai_api_key);
+      this.geminiApiAddress = data.gemini_api_address;
+      this.openaiApiAddress = data.openai_api_address;
     } catch (error) {
       console.error('Error loading API keys:', error);
     }
   }
   
   // Save API keys to user profile
-  async saveApiKeys(geminiKey = null, openaiKey = null) {
+  async saveApiKeys(geminiKey = null, openaiKey = null, geminiAddress = null, openaiAddress = null) {
     if (!this.currentUser) return;
     
     try {
@@ -45,13 +49,13 @@ class AIService {
       const encryptedGeminiKey = this.encryption.simpleDecrypt(geminiKey) ? geminiKey : this.encryption.simpleEncrypt(geminiKey);
       const encryptedOpenaiKey = this.encryption.simpleDecrypt(openaiKey) ? openaiKey : this.encryption.simpleEncrypt(openaiKey);
       
-      // Note: In a production environment, these keys should be encrypted client-side
-      // before being sent to the server
       const { error } = await supabaseClient
         .rpc('update_user_api_keys', {
-          user_id: this.currentUser.id,
-          gemini_key: encryptedGeminiKey,
-          openai_key: encryptedOpenaiKey
+          user_id_in: this.currentUser.id,
+          gemini_key_in: encryptedGeminiKey,
+          openai_key_in: encryptedOpenaiKey,
+          gemini_address_in: geminiAddress,
+          openai_address_in: openaiAddress
         });
         
       if (error) throw error;
@@ -59,6 +63,8 @@ class AIService {
       // Update local copies
       this.geminiApiKey = geminiKey;
       this.openaiApiKey = openaiKey;
+      this.geminiApiAddress = geminiAddress;
+      this.openaiApiAddress = openaiAddress;
       
       return { success: true };
     } catch (error) {
@@ -74,7 +80,8 @@ class AIService {
     }
     
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+      const apiAddress = this.geminiApiAddress || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+      const response = await fetch(`${apiAddress}?key=${this.geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -120,8 +127,9 @@ class AIService {
     try {
       // Format messages for ChatGPT
       const messages = [...history, { role: 'user', content: message }];
+      const apiAddress = this.openaiApiAddress || 'https://api.openai.com/v1/chat/completions';
       
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(apiAddress, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.openaiApiKey}`,

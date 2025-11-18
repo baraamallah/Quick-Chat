@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - Quick Chat</title>
     <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-    <link rel="stylesheet" href="../css/dark-theme.css">
+    <link rel="stylesheet" href="../css/new-ui.css">
     <link rel="stylesheet" href="../css/theme-system.css">
     <link rel="stylesheet" href="../css/mobile.css">
     <link rel="stylesheet" href="../css/images.css">
@@ -673,16 +673,13 @@
     <link rel="stylesheet" href="../css/screensaver.css">
 </head>
 <body>
-    <img id="chatBgImage" style="display: none;" alt="">
     <div class="chat-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
+        <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="user-profile">
                     <div class="avatar" id="currentUserAvatar"></div>
                     <div class="user-info">
                         <div class="user-name" id="currentUserName">Loading...</div>
-                        <div class="friend-code-display" id="currentUserCode">------</div>
                     </div>
                 </div>
                 <div class="header-actions">
@@ -690,260 +687,55 @@
                     <button class="icon-btn" onclick="signOut()" title="Sign Out">🚪</button>
                 </div>
             </div>
-
-            <div class="add-friend-section">
-                <form class="add-friend-form" onsubmit="addFriend(event)">
-                    <input 
-                        type="text" 
-                        class="add-friend-input" 
-                        id="friendCodeInput"
-                        placeholder="Enter friend or group code"
-                        maxlength="6"
-                        required
-                    >
-                    <button type="submit" class="icon-btn" title="Add Friend or Join Group">➕</button>
-                </form>
+            <div id="conversations-list">
+                <!-- Conversations will be dynamically populated here -->
             </div>
-
-            <div class="friends-list-header">Friends</div>
-            <div class="friends-list" id="friendsList">
-                <div class="empty-state">
-                    <div class="empty-state-icon">👥</div>
-                    <div class="empty-state-title">No friends yet</div>
-                    <div class="empty-state-text">Add friends or join groups using codes</div>
-                </div>
-            </div>
-
-            <!-- Groups Section -->
-            <div class="groups-section">
-                <div class="section-header">
-                    <div class="section-title">Groups</div>
-                    <button class="create-group-btn" onclick="openCreateGroupModal()" title="Create Group">+</button>
-                </div>
-                <div id="groupsList">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">👥</div>
-                        <div class="empty-state-text">No groups yet</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chat Area -->
-        <div class="chat-area">
-            <div class="empty-chat" id="emptyChat">
+        </aside>
+        <main class="main-content">
+            <header class="chat-header">
+                <h3>AI Chat</h3>
                 <div>
-                    <div class="empty-chat-icon">💬</div>
-                    <div class="empty-chat-title">Select a friend to start chatting</div>
-                    <div class="empty-chat-text">Your messages are private and secure</div>
+                    <select id="ai-provider-select">
+                        <option value="gemini">Gemini</option>
+                        <option value="openai">OpenAI</option>
+                    </select>
                 </div>
+            </header>
+            <div class="messages" id="messages-container">
+                <!-- Messages will be dynamically populated here -->
             </div>
-
-            <div id="chatView" style="display: none; flex-direction: column;" class="chat-view">
-                <div class="chat-header">
-                    <div class="chat-header-info" onclick="selectedFriend && openProfileModal(selectedFriend.id)" style="cursor: pointer;">
-                        <div class="avatar" id="chatFriendAvatar"></div>
-                        <div class="chat-header-text">
-                            <div class="chat-friend-name" id="chatFriendName"></div>
-                            <div class="chat-friend-status" id="chatFriendStatus"></div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="message-input" placeholder="Type your message or use the AI menu...">
+                    <div class="ai-menu">
+                        <button id="ai-menu-button">✨</button>
+                        <div class="ai-menu-options">
+                            <button class="ai-option" data-action="summarize">Summarize</button>
+                            <button class="ai-option" data-action="translate">Translate</button>
+                            <button class="ai-option" data-action="grammar">Check Grammar</button>
                         </div>
                     </div>
-                    <div class="header-actions">
-                        <button class="icon-btn" id="chatActionBtn1" onclick="selectedFriend ? openProfileModal(selectedFriend.id) : openGroupSettings()" title="View Profile">👤</button>
-                        <button class="icon-btn" id="chatActionBtn2" onclick="selectedFriend ? removeFriend() : leaveGroupFromChat()" title="Remove Friend">🗑️</button>
-                    </div>
-                </div>
-
-                <div class="messages-container" id="messagesContainer"></div>
-
-                <div class="message-input-container">
-                    <form class="message-input-form" onsubmit="sendMessage(event)">
-                        <button type="button" class="attachment-btn" onclick="openAttachmentMenu()" title="Attach">
-                            📎
-                        </button>
-                        <textarea 
-                            class="message-input" 
-                            id="messageInput"
-                            placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
-                            rows="1"
-                            required
-                            onkeydown="handleMessageKeyDown(event)"
-                        ></textarea>
-                        <button type="submit" class="send-btn" id="sendBtn">
-                            <span>📤</span>
-                        </button>
-                        <button type="button" class="send-btn" id="aiBtn" onclick="sendToAI()" title="Send to AI">
-                            <span>🤖</span>
-                        </button>
-                    </form>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Profile Modal -->
-    <div class="profile-modal" id="profileModal" onclick="closeProfileModal(event)">
-        <div class="profile-modal-content" onclick="event.stopPropagation()">
-            <button class="profile-modal-close" onclick="closeProfileModal()">×</button>
-            
-            <div class="profile-modal-header">
-                <div class="profile-modal-avatar" id="modalAvatar"></div>
-                <div class="profile-modal-name" id="modalName">Loading...</div>
-                <div class="profile-modal-username" id="modalUsername">@username</div>
-                <span class="profile-modal-status" id="modalStatus">
-                    <span id="modalStatusIcon">🟢</span>
-                    <span id="modalStatusText">Online</span>
-                </span>
-            </div>
-
-            <div class="profile-modal-section">
-                <div class="profile-modal-section-title">About</div>
-                <div class="profile-modal-bio" id="modalBio">No bio yet</div>
-            </div>
-
-            <div class="profile-modal-section">
-                <div class="profile-modal-section-title">Information</div>
-                <div class="profile-info-grid">
-                    <div class="profile-info-item">
-                        <span class="profile-info-label">Friend Code</span>
-                        <span class="profile-info-value" id="modalFriendCode">------</span>
-                    </div>
-                    <div class="profile-info-item">
-                        <span class="profile-info-label">Friends Since</span>
-                        <span class="profile-info-value" id="modalFriendsSince">Just now</span>
-                    </div>
-                    <div class="profile-info-item">
-                        <span class="profile-info-label">Last Seen</span>
-                        <span class="profile-info-value" id="modalLastSeen">Just now</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mobile Overlay -->
-    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
-
-    <!-- Attachment Menu -->
-    <div class="attachment-menu" id="attachmentMenu">
-        <button onclick="selectImage()">📸 Image</button>
-        <button onclick="closeAttachmentMenu()">❌ Cancel</button>
-    </div>
-
-    <!-- Hidden File Input -->
-    <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
-
-    <!-- Image Preview Modal -->
-    <div class="image-preview-modal" id="imagePreviewModal">
-        <div class="image-preview-content">
-            <h3>Send Image</h3>
-            <div class="preview-image-container">
-                <img id="previewImage" src="" alt="Preview">
-            </div>
-            <div class="preview-file-name" id="previewFileName"></div>
-            <textarea 
-                class="preview-caption-input" 
-                id="imageCaption" 
-                placeholder="Add a caption (optional)..."
-            ></textarea>
-            <div class="preview-actions">
-                <button class="preview-cancel-btn" onclick="closeImagePreview()">Cancel</button>
-                <button class="preview-send-btn" onclick="sendPreviewedImage()">Send</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Image Viewer Modal -->
-    <div class="image-viewer-modal" id="imageViewerModal" onclick="closeImageViewer()">
-        <button class="image-viewer-close" onclick="closeImageViewer()">×</button>
-        <div class="viewer-image-container" onclick="event.stopPropagation()">
-            <img id="viewerImage" src="" alt="Image">
-        </div>
-        <div class="viewer-info" onclick="event.stopPropagation()">
-            <div class="viewer-details">
-                <div class="viewer-sender" id="viewerSender"></div>
-                <div class="viewer-time" id="viewerTime"></div>
-                <div class="viewer-caption" id="viewerCaption"></div>
-            </div>
-            <div class="viewer-actions">
-                <button onclick="downloadImage()">⬇️ Download</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Group Modal -->
-    <div class="create-group-modal" id="createGroupModal">
-        <div class="create-group-content">
-            <h2>Create Group</h2>
-            <div class="form-group">
-                <label>Group Name</label>
-                <input type="text" id="groupName" placeholder="Enter group name" maxlength="100">
-            </div>
-            <div class="form-group">
-                <label>Description (Optional)</label>
-                <textarea id="groupDescription" placeholder="What's this group about?"></textarea>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeCreateGroupModal()">Cancel</button>
-                <button class="btn-primary" onclick="handleCreateGroup()">Create Group</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Group Settings Modal -->
-    <div class="group-settings-modal" id="groupSettingsModal" onclick="if(event.target === this) closeGroupSettings()">
-        <div class="group-settings-content">
-            <button class="profile-modal-close" onclick="closeGroupSettings()">×</button>
-            
-            <div class="group-settings-header">
-                <div class="group-avatar-large" id="groupSettingsAvatar"></div>
-                <div class="group-settings-name" id="groupSettingsName">Loading...</div>
-                <div class="group-settings-code" id="groupSettingsCode">------</div>
-            </div>
-
-            <div class="settings-section">
-                <div class="settings-section-title">Members</div>
-                <div id="groupMembersList">
-                    <div class="empty-state">
-                        <div class="empty-state-text">Loading members...</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="danger-zone">
-                <h4>⚠️ Danger Zone</h4>
-                <button class="btn-danger" onclick="deleteGroupConfirmation()">
-                    🗑️ Delete Group
-                </button>
-            </div>
-        </div>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/config.js"></script>
     <script src="../js/supabase-init.js"></script>
-    <script src="../js/api-key-encryption.js"></script>
     <script src="../js/ai-service.js"></script>
     <script>
         // Initialize Supabase
-        supabaseClient = initSupabase();
-
+        const supabaseClient = initSupabase();
         let currentUser = null;
-        let friends = [];
-        let selectedFriend = null;
-        let messages = [];
-        let messageSubscription = null;
 
-        // Check authentication
         async function checkAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            
             if (!session) {
                 window.location.href = '/pages/auth.html';
                 return;
             }
 
-            // Get user profile
             const { data: user, error } = await supabaseClient
                 .from('users')
                 .select('*')
@@ -957,22 +749,12 @@
 
             currentUser = user;
             updateUserProfile();
-            updateOnlineStatus(true);
-            loadFriends();
-            loadGroups(); // Load groups
-            subscribeToUpdates();
-            
-            // Initialize AI service with user
-            if (typeof aiService !== 'undefined') {
-                await aiService.setUser(user);
-            }
+            // Other initialization functions can be called here
         }
 
-        // Update user profile display
         function updateUserProfile() {
             const avatar = document.getElementById('currentUserAvatar');
             const name = document.getElementById('currentUserName');
-            const code = document.getElementById('currentUserCode');
 
             if (currentUser.avatar_url) {
                 avatar.innerHTML = `<img src="${escapeHtml(currentUser.avatar_url)}" alt="${escapeHtml(currentUser.display_name)}">`;
@@ -980,744 +762,14 @@
                 avatar.style.background = currentUser.color;
                 avatar.textContent = currentUser.display_name.charAt(0).toUpperCase();
             }
-
             name.textContent = currentUser.display_name;
-            code.textContent = currentUser.friend_code;
-            
-            // Load background image if set
-            if (currentUser.bg_image_url) {
-                const bgImg = document.getElementById('chatBgImage');
-                bgImg.src = currentUser.bg_image_url;
-                bgImg.style.display = 'block';
-                bgImg.onerror = function() {
-                    this.style.display = 'none';
-                };
-            }
         }
 
-        // Update online status
-        async function updateOnlineStatus(isOnline) {
-            if (!currentUser) return;
-            
-            await supabaseClient
-                .from('users')
-                .update({ 
-                    is_online: isOnline,
-                    last_seen: new Date().toISOString()
-                })
-                .eq('id', currentUser.id);
-        }
-
-        // Load friends
-        async function loadFriends() {
-            try {
-                const { data: friendships, error } = await supabaseClient
-                    .from('friendships')
-                    .select('*')
-                    .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
-
-                if (error) throw error;
-
-                // Get friend IDs
-                const friendIds = friendships.map(f => 
-                    f.user1_id === currentUser.id ? f.user2_id : f.user1_id
-                );
-
-                if (friendIds.length === 0) {
-                    friends = [];
-                    renderFriends();
-                    return;
-                }
-
-                // Get friend details
-                const { data: friendsData, error: friendsError } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .in('id', friendIds);
-
-                if (friendsError) throw friendsError;
-
-                friends = friendsData;
-                renderFriends();
-            } catch (error) {
-                console.error('Error loading friends:', error);
-                showNotification('Failed to load friends', 'error');
-            }
-        }
-
-        // Render friends list
-        function renderFriends() {
-            const container = document.getElementById('friendsList');
-
-            if (friends.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">👥</div>
-                        <div class="empty-state-title">No friends yet</div>
-                        <div class="empty-state-text">Add friends using their code</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = friends.map(friend => {
-                const avatarHtml = friend.avatar_url 
-                    ? `<img src="${escapeHtml(friend.avatar_url)}" alt="${escapeHtml(friend.display_name)}">`
-                    : friend.display_name.charAt(0).toUpperCase();
-                
-                const isActive = selectedFriend && selectedFriend.id === friend.id;
-                
-                return `
-                    <div class="friend-item ${isActive ? 'active' : ''}" onclick="selectFriend('${friend.id}')">
-                        <div class="avatar avatar-sm" style="background: ${friend.color}">
-                            ${avatarHtml}
-                        </div>
-                        ${friend.is_online ? '<div class="online-indicator"></div>' : ''}
-                    <div class="friend-item-info">
-                        <div class="friend-name">
-                            ${escapeHtml(friend.display_name)}
-                            ${friend.is_verified ? '<span class="verified-badge verified-tooltip"></span>' : ''}
-                        </div>
-                        <div class="friend-status">${friend.is_online ? '🟢 Online' : '⚫ Offline'}</div>
-                    </div>
-                </div>
-                `;
-            }).join('');
-        }
-
-        // Add friend
-        async function addFriend(event) {
-            event.preventDefault();
-            
-            const input = document.getElementById('friendCodeInput');
-            const code = input.value.trim().toUpperCase();
-
-            if (!code) return;
-
-            try {
-                // First, try to find a user by friend code
-                const { data: friend, error: findUserError } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('friend_code', code)
-                    .single();
-
-                if (friend && !findUserError) {
-                    // Found a user - add as friend
-                    if (friend.id === currentUser.id) {
-                        showNotification("You can't add yourself!", 'error');
-                        return;
-                    }
-
-                    // Check if already friends
-                    const alreadyFriends = friends.some(f => f.id === friend.id);
-                    if (alreadyFriends) {
-                        showNotification('Already friends!', 'error');
-                        return;
-                    }
-
-                    // Create friendship (ensure consistent ordering)
-                    const [user1, user2] = [currentUser.id, friend.id].sort();
-                    
-                    const { error: insertError } = await supabaseClient
-                        .from('friendships')
-                        .insert({
-                            user1_id: user1,
-                            user2_id: user2
-                        });
-
-                    if (insertError) throw insertError;
-
-                    showNotification(`Added ${friend.display_name}!`, 'success');
-                    input.value = '';
-                    loadFriends();
-                    return;
-                }
-
-                // If no user found, try to find a group by group code
-                const { data: group, error: findGroupError } = await supabaseClient
-                    .from('groups')
-                    .select('*')
-                    .eq('group_code', code)
-                    .single();
-
-                if (group && !findGroupError) {
-                    // Found a group - join it
-                    // Check if already a member
-                    const { data: existingMembership } = await supabaseClient
-                        .from('group_members')
-                        .select('id')
-                        .eq('group_id', group.id)
-                        .eq('user_id', currentUser.id)
-                        .single();
-
-                    if (existingMembership) {
-                        showNotification('Already a member of this group!', 'error');
-                        return;
-                    }
-
-                    // Join the group
-                    const { error: joinError } = await supabaseClient
-                        .from('group_members')
-                        .insert({
-                            group_id: group.id,
-                            user_id: currentUser.id,
-                            role: 'member'
-                        });
-
-                    if (joinError) throw joinError;
-
-                    showNotification(`Joined group "${group.name}"!`, 'success');
-                    input.value = '';
-                    loadGroups();
-                    return;
-                }
-
-                // If neither user nor group found
-                showNotification('Code not found. Check the code and try again.', 'error');
-                
-            } catch (error) {
-                console.error('Error adding friend/joining group:', error);
-                showNotification('Failed to add friend or join group', 'error');
-            }
-        }
-
-        // Select friend to chat
-        async function selectFriend(friendId) {
-            selectedFriend = friends.find(f => f.id === friendId);
-            if (!selectedFriend) return;
-
-            selectedGroup = null; // Clear group selection
-            messages = []; // Clear previous messages
-
-            // Unsubscribe from group messages if any
-            if (window.groupMessageSubscription) {
-                window.groupMessageSubscription.unsubscribe();
-                window.groupMessageSubscription = null;
-            }
-
-            // Update UI
-            document.getElementById('emptyChat').style.display = 'none';
-            const chatView = document.getElementById('chatView');
-            chatView.style.display = 'flex';
-            chatView.classList.add('active');
-
-            // Update chat header with proper styling cleanup
-            const avatar = document.getElementById('chatFriendAvatar');
-            avatar.style.background = ''; // Reset background
-            avatar.style.color = '';
-            
-            if (selectedFriend.avatar_url) {
-                avatar.innerHTML = `<img src="${escapeHtml(selectedFriend.avatar_url)}" alt="${escapeHtml(selectedFriend.display_name)}">`;
-            } else {
-                avatar.style.background = selectedFriend.color;
-                avatar.textContent = selectedFriend.display_name.charAt(0).toUpperCase();
-            }
-
-            const nameEl = document.getElementById('chatFriendName');
-            nameEl.innerHTML = `${escapeHtml(selectedFriend.display_name)}${selectedFriend.is_verified ? '<span class="verified-badge verified-tooltip chat-header-verified" style="margin-left: 4px;"></span>' : ''}`;
-            document.getElementById('chatFriendStatus').textContent = selectedFriend.is_online ? '🟢 Online' : '⚫ Offline';
-
-            renderFriends();
-            loadMessages();
-            subscribeToMessages();
-            updateChatActions();
-            
-            // Also refresh groups to update active state
-            if (typeof renderGroups === 'function') {
-                renderGroups();
-            }
-        }
-
-        // Update chat action buttons based on selected chat
-        function updateChatActions() {
-            const btn1 = document.getElementById('chatActionBtn1');
-            const btn2 = document.getElementById('chatActionBtn2');
-            
-            if (!btn1 || !btn2) return; // Safety check
-            
-            if (selectedGroup && !selectedFriend) {
-                // Group chat
-                btn1.title = 'Group Settings';
-                btn1.innerHTML = '⚙️';
-                btn2.title = 'Leave Group';
-                btn2.innerHTML = '🚪';
-            } else if (selectedFriend) {
-                // Friend chat
-                btn1.title = 'View Profile';
-                btn1.innerHTML = '👤';
-                btn2.title = 'Remove Friend';
-                btn2.innerHTML = '🗑️';
-            } else {
-                // No chat selected, reset to defaults
-                btn1.title = '';
-                btn1.innerHTML = '';
-                btn2.title = '';
-                btn2.innerHTML = '';
-            }
-        }
-
-        // Load messages
-        async function loadMessages() {
-            // Messages are loaded by loadGroupMessages for groups
-            // This is only for direct friend messages
-            if (!selectedFriend || selectedGroup) return;
-
-            try {
-                // Store the friend ID to check against race conditions
-                const friendId = selectedFriend.id;
-                
-                const { data, error } = await supabaseClient
-                    .from('messages')
-                    .select('*')
-                    .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${currentUser.id})`)
-                    .order('created_at', { ascending: true });
-
-                if (error) throw error;
-
-                // Check if we're still viewing the same friend
-                if (selectedFriend && selectedFriend.id === friendId && !selectedGroup) {
-                    messages = data || [];
-                    renderMessages();
-                }
-            } catch (error) {
-                console.error('Error loading messages:', error);
-                showNotification('Failed to load messages', 'error');
-            }
-        }
-
-        // Render messages
-        function renderMessages() {
-            const container = document.getElementById('messagesContainer');
-
-            if (messages.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">💬</div>
-                        <div class="empty-state-title">No messages yet</div>
-                        <div class="empty-state-text">Send a message to start the conversation</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = messages.map(msg => {
-                const isSent = msg.sender_id === currentUser.id;
-                const isAI = msg.sender_id === 'ai';
-                
-                // Handle image messages
-                if (msg.message_type === 'image') {
-                    return renderImageMessage(msg, isSent);
-                }
-                
-                // Handle AI messages
-                if (isAI) {
-                    const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    
-                    return `
-                        <div class="message ai">
-                            <div class="ai-model-indicator">${msg.ai_model || 'AI'}</div>
-                            <div class="message-content">
-                                <div class="message-text">${escapeHtml(msg.content)}</div>
-                                <div class="message-time">${time}</div>
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                // Handle text messages
-                const sender = isSent ? currentUser : selectedFriend;
-                const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                const avatarHtml = sender.avatar_url 
-                    ? `<img src="${escapeHtml(sender.avatar_url)}" alt="${escapeHtml(sender.display_name)}">`
-                    : sender.display_name.charAt(0).toUpperCase();
-
-                return `
-                    <div class="message ${isSent ? 'sent' : ''}">
-                        <div class="avatar avatar-sm message-avatar" style="background: ${sender.color}">
-                            ${avatarHtml}
-                        </div>
-                        <div>
-                            <div class="message-content">
-                                <div class="message-text">${escapeHtml(msg.content)}</div>
-                                <div class="message-time">${time}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Scroll to bottom
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Handle Enter key in message input
-        function handleMessageKeyDown(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                const form = event.target.closest('form');
-                if (form) {
-                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                }
-            }
-        }
-
-        // Send message
-        async function sendMessage(event) {
-            event.preventDefault();
-
-            const input = document.getElementById('messageInput');
-            const content = input.value.trim();
-
-            if (!content) return;
-
-            try {
-                // Check if it's a group message or direct message
-                if (selectedGroup && !selectedFriend) {
-                    // Group message
-                    await sendGroupMessage(content);
-                } else if (selectedFriend) {
-                    // Direct message
-                    const { error } = await supabaseClient
-                        .from('messages')
-                        .insert({
-                            sender_id: currentUser.id,
-                            receiver_id: selectedFriend.id,
-                            content: content
-                        });
-
-                    if (error) throw error;
-                } else {
-                    return; // No chat selected
-                }
-
-                input.value = '';
-                input.style.height = 'auto';
-            } catch (error) {
-                console.error('Error sending message:', error);
-                showNotification('Failed to send message', 'error');
-            }
-        }
-
-        // Send message to AI
-        async function sendToAI() {
-            if (!aiService || !aiService.isConfigured()) {
-                showNotification('Please configure AI services in Settings first', 'error');
-                return;
-            }
-            
-            const input = document.getElementById('messageInput');
-            const content = input.value.trim();
-            
-            if (!content) return;
-            
-            // Disable the AI button while processing
-            const aiBtn = document.getElementById('aiBtn');
-            const originalContent = aiBtn.innerHTML;
-            aiBtn.innerHTML = '<span class="spinner"></span>';
-            aiBtn.disabled = true;
-            
-            try {
-                // Show the user's message in the chat
-                addMessageToChat({
-                    id: 'temp-' + Date.now(),
-                    sender_id: currentUser.id,
-                    content: content,
-                    created_at: new Date().toISOString(),
-                    is_temporary: true
-                });
-                
-                input.value = '';
-                input.style.height = 'auto';
-                
-                // Send to AI service
-                const result = await aiService.sendMessage(content);
-                
-                if (result.success) {
-                    // Show AI response in chat
-                    addMessageToChat({
-                        id: 'ai-' + Date.now(),
-                        sender_id: 'ai',
-                        content: result.reply,
-                        created_at: new Date().toISOString(),
-                        ai_model: result.model
-                    });
-                    
-                    showNotification(`Response from ${result.model}`, 'success');
-                } else {
-                    showNotification(`AI Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error sending to AI:', error);
-                showNotification('Failed to send message to AI', 'error');
-            } finally {
-                // Re-enable the AI button
-                aiBtn.innerHTML = originalContent;
-                aiBtn.disabled = false;
-            }
-        }
-        
-        // Add message to chat display
-        function addMessageToChat(message) {
-            const container = document.getElementById('messagesContainer');
-            const isSent = message.sender_id === currentUser.id;
-            const isAI = message.sender_id === 'ai';
-            
-            const messageElement = document.createElement('div');
-            messageElement.className = `message ${isSent ? 'sent' : isAI ? 'ai' : 'received'}`;
-            messageElement.dataset.messageId = message.id;
-            
-            // Format timestamp
-            const timestamp = new Date(message.created_at).toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            
-            // Add AI model indicator for AI messages
-            const aiIndicator = isAI ? `<div class="ai-model-indicator">${message.ai_model || 'AI'}</div>` : '';
-            
-            messageElement.innerHTML = `
-                ${aiIndicator}
-                <div class="message-content">${escapeHtml(message.content)}</div>
-                <div class="message-time">${timestamp}</div>
-            `;
-            
-            container.appendChild(messageElement);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Remove friend
-        async function removeFriend() {
-            if (!selectedFriend) return;
-
-            if (!confirm(`Remove ${selectedFriend.display_name} from friends?`)) return;
-
-            try {
-                const [user1, user2] = [currentUser.id, selectedFriend.id].sort();
-
-                const { error } = await supabaseClient
-                    .from('friendships')
-                    .delete()
-                    .eq('user1_id', user1)
-                    .eq('user2_id', user2);
-
-                if (error) throw error;
-
-                showNotification('Friend removed', 'success');
-                
-                // Reset chat view
-                document.getElementById('emptyChat').style.display = 'flex';
-                const chatView = document.getElementById('chatView');
-                chatView.style.display = 'none';
-                chatView.classList.remove('active');
-                selectedFriend = null;
-                
-                if (messageSubscription) {
-                    messageSubscription.unsubscribe();
-                    messageSubscription = null;
-                }
-
-                loadFriends();
-            } catch (error) {
-                console.error('Error removing friend:', error);
-                showNotification('Failed to remove friend', 'error');
-            }
-        }
-
-        // Subscribe to real-time updates
-        function subscribeToUpdates() {
-            // Subscribe to friendships changes
-            supabaseClient
-                .channel('friendships-channel')
-                .on('postgres_changes', { 
-                    event: '*', 
-                    schema: 'public', 
-                    table: 'friendships',
-                    filter: `user1_id=eq.${currentUser.id}`
-                }, loadFriends)
-                .on('postgres_changes', { 
-                    event: '*', 
-                    schema: 'public', 
-                    table: 'friendships',
-                    filter: `user2_id=eq.${currentUser.id}`
-                }, loadFriends)
-                .subscribe();
-
-            // Subscribe to user status changes
-            supabaseClient
-                .channel('users-channel')
-                .on('postgres_changes', { 
-                    event: 'UPDATE', 
-                    schema: 'public', 
-                    table: 'users'
-                }, (payload) => {
-                    const updatedUser = payload.new;
-                    const friendIndex = friends.findIndex(f => f.id === updatedUser.id);
-                    if (friendIndex !== -1) {
-                        friends[friendIndex] = updatedUser;
-                        renderFriends();
-                        
-                        if (selectedFriend && selectedFriend.id === updatedUser.id) {
-                            selectedFriend = updatedUser;
-                            document.getElementById('chatFriendStatus').textContent = 
-                                updatedUser.is_online ? '🟢 Online' : '⚫ Offline';
-                        }
-                    }
-                })
-                .subscribe();
-        }
-
-        // Subscribe to messages for current chat
-        function subscribeToMessages() {
-            // Unsubscribe from previous
-            if (messageSubscription) {
-                messageSubscription.unsubscribe();
-                messageSubscription = null;
-            }
-
-            // Don't subscribe if no chat is selected
-            if (!selectedFriend && !selectedGroup) return;
-
-            // Store current chat IDs to check against
-            const currentFriendId = selectedFriend?.id;
-            const currentGroupId = selectedGroup?.id;
-
-            // Subscribe to new messages
-            messageSubscription = supabaseClient
-                .channel(`messages-${selectedFriend?.id || selectedGroup?.id}`)
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages'
-                }, (payload) => {
-                    const message = payload.new;
-                    
-                    // Prevent duplicate messages
-                    if (messages.some(m => m.id === message.id)) return;
-                    
-                    // Check if message is for current chat (verify against stored IDs)
-                    if (currentFriendId && selectedFriend) {
-                        // Direct message
-                        if ((message.sender_id === currentUser.id && message.receiver_id === currentFriendId) ||
-                            (message.receiver_id === currentUser.id && message.sender_id === currentFriendId)) {
-                            messages.push(message);
-                            renderMessages();
-                        }
-                    } else if (currentGroupId && selectedGroup) {
-                        // Group message
-                        if (message.group_id === currentGroupId) {
-                            messages.push(message);
-                            // Use renderGroupMessages if available
-                            if (typeof renderGroupMessages === 'function') {
-                                renderGroupMessages();
-                            } else {
-                                renderMessages();
-                            }
-                        }
-                    }
-                })
-                .subscribe();
-        }
-
-        // Sign out
         async function signOut() {
-            await updateOnlineStatus(false);
             await supabaseClient.auth.signOut();
             window.location.href = '/pages/auth.html';
         }
-
-        // Profile Modal Functions
-        async function openProfileModal(friendId) {
-            const friend = friends.find(f => f.id === friendId);
-            if (!friend) return;
-
-            // Get friendship date
-            const { data: friendship } = await supabaseClient
-                .from('friendships')
-                .select('created_at')
-                .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`)
-                .or(`user1_id.eq.${friendId},user2_id.eq.${friendId}`)
-                .single();
-
-            // Update modal content
-            const modalAvatar = document.getElementById('modalAvatar');
-            if (friend.avatar_url) {
-                modalAvatar.innerHTML = `<img src="${escapeHtml(friend.avatar_url)}" alt="${escapeHtml(friend.display_name)}">`;
-            } else {
-                modalAvatar.style.background = friend.color;
-                modalAvatar.textContent = friend.display_name.charAt(0).toUpperCase();
-            }
-
-            const modalNameEl = document.getElementById('modalName');
-            modalNameEl.innerHTML = `${escapeHtml(friend.display_name)}${friend.is_verified ? '<span class="verified-badge verified-tooltip"></span>' : ''}`;
-            document.getElementById('modalUsername').textContent = `@${friend.username}`;
-            
-            // Status
-            const statusEl = document.getElementById('modalStatus');
-            const statusIcon = document.getElementById('modalStatusIcon');
-            const statusText = document.getElementById('modalStatusText');
-            if (friend.is_online) {
-                statusEl.className = 'profile-modal-status';
-                statusIcon.textContent = '🟢';
-                statusText.textContent = 'Online';
-            } else {
-                statusEl.className = 'profile-modal-status offline';
-                statusIcon.textContent = '⚫';
-                statusText.textContent = 'Offline';
-            }
-
-            // Bio
-            const bioEl = document.getElementById('modalBio');
-            if (friend.bio && friend.bio.trim()) {
-                bioEl.textContent = friend.bio;
-                bioEl.className = 'profile-modal-bio';
-            } else {
-                bioEl.textContent = 'No bio yet';
-                bioEl.className = 'profile-modal-bio empty';
-            }
-
-            // Info
-            document.getElementById('modalFriendCode').textContent = friend.friend_code;
-            
-            if (friendship) {
-                const friendsSince = new Date(friendship.created_at);
-                document.getElementById('modalFriendsSince').textContent = friendsSince.toLocaleDateString();
-            }
-
-            if (friend.last_seen) {
-                const lastSeen = new Date(friend.last_seen);
-                const now = new Date();
-                const diff = now - lastSeen;
-                const minutes = Math.floor(diff / 60000);
-                const hours = Math.floor(minutes / 60);
-                const days = Math.floor(hours / 24);
-
-                let lastSeenText;
-                if (friend.is_online) {
-                    lastSeenText = 'Online now';
-                } else if (minutes < 1) {
-                    lastSeenText = 'Just now';
-                } else if (minutes < 60) {
-                    lastSeenText = `${minutes}m ago`;
-                } else if (hours < 24) {
-                    lastSeenText = `${hours}h ago`;
-                } else {
-                    lastSeenText = `${days}d ago`;
-                }
-                document.getElementById('modalLastSeen').textContent = lastSeenText;
-            }
-
-            // Show modal
-            document.getElementById('profileModal').classList.add('active');
-        }
-
-        function closeProfileModal(event) {
-            if (event && event.target !== event.currentTarget) return;
-            document.getElementById('profileModal').classList.remove('active');
-        }
-
-        // Helper functions
+        
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -1732,41 +784,7 @@
             setTimeout(() => notification.remove(), 3000);
         }
 
-        // Auto-resize textarea
-        document.getElementById('messageInput').addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-        });
-
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            updateOnlineStatus(false);
-        });
-
-        // Mobile sidebar functions
-        function openMobileSidebar() {
-            document.querySelector('.sidebar').classList.add('open');
-            document.getElementById('mobileOverlay').classList.add('active');
-        }
-
-        function closeMobileSidebar() {
-            document.querySelector('.sidebar').classList.remove('open');
-            document.getElementById('mobileOverlay').classList.remove('active');
-        }
-
-        // Initialize
         checkAuth();
     </script>
-
-    <!-- Include additional JS files -->
-    <script src="../js/images.js"></script>
-    <script src="../js/groups.js"></script>
-    <script src="../js/screensaver.js"></script>
-    
-    <!-- Theme Toggle -->
-    <script src="../js/theme-toggle.js"></script>
-    
-    <!-- Vercel Analytics -->
-    <script defer src="https://cdn.vercel-insights.com/v1/script.debug.js"></script>
 </body>
 </html>

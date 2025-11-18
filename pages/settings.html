@@ -323,6 +323,11 @@
                     Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" style="color: var(--accent-color);">Google AI Studio</a>
                 </p>
             </div>
+
+            <div class="form-group">
+                <label for="geminiApiAddress">Gemini API Address (Optional)</label>
+                <input type="url" id="geminiApiAddress" placeholder="https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent">
+            </div>
             
             <div class="form-group">
                 <label for="openaiApiKey">OpenAI API Key</label>
@@ -333,6 +338,11 @@
                 <p class="text-muted" style="font-size: 12px; margin-top: 4px;">
                     Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--accent-color);">OpenAI Platform</a>
                 </p>
+            </div>
+
+            <div class="form-group">
+                <label for="openaiApiAddress">OpenAI API Address (Optional)</label>
+                <input type="url" id="openaiApiAddress" placeholder="https://api.openai.com/v1/chat/completions">
             </div>
             
             <button onclick="saveApiKeys()" class="btn btn-primary" id="saveApiKeysBtn">
@@ -736,6 +746,8 @@
         async function saveApiKeys() {
             const geminiKey = document.getElementById('geminiApiKey').value.trim() || null;
             const openaiKey = document.getElementById('openaiApiKey').value.trim() || null;
+            const geminiAddress = document.getElementById('geminiApiAddress').value.trim() || null;
+            const openaiAddress = document.getElementById('openaiApiAddress').value.trim() || null;
             
             const saveBtn = document.getElementById('saveApiKeysBtn');
             const statusDiv = document.getElementById('apiKeysStatus');
@@ -748,9 +760,11 @@
                 // Call the RPC function to update API keys
                 const { error } = await supabaseClient
                     .rpc('update_user_api_keys', {
-                        user_id: currentUser.id,
-                        gemini_key: geminiKey,
-                        openai_key: openaiKey
+                        user_id_in: currentUser.id,
+                        gemini_key_in: geminiKey,
+                        openai_key_in: openaiKey,
+                        gemini_address_in: geminiAddress,
+                        openai_address_in: openaiAddress
                     });
                 
                 if (error) throw error;
@@ -761,6 +775,8 @@
                 // Update current user object
                 currentUser.gemini_api_key = geminiKey;
                 currentUser.openai_api_key = openaiKey;
+                currentUser.gemini_api_address = geminiAddress;
+                currentUser.openai_api_address = openaiAddress;
                 
                 showNotification('API keys saved successfully!', 'success');
             } catch (error) {
@@ -784,9 +800,14 @@
             if (currentUser.gemini_api_key) {
                 document.getElementById('geminiApiKey').value = currentUser.gemini_api_key;
             }
-            
             if (currentUser.openai_api_key) {
                 document.getElementById('openaiApiKey').value = currentUser.openai_api_key;
+            }
+            if (currentUser.gemini_api_address) {
+                document.getElementById('geminiApiAddress').value = currentUser.gemini_api_address;
+            }
+            if (currentUser.openai_api_address) {
+                document.getElementById('openaiApiAddress').value = currentUser.openai_api_address;
             }
         }
 
